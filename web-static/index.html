@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concesionaria Multimarcas | Gestión de Stock</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="barra">
+    <div class="marca">
+      <div class="logo">CM</div>
+      <div>
+        <h1>Concesionaria Multimarcas</h1>
+        <p>Sistema de gestión de stock · Java 17 + web estándar</p>
+      </div>
+    </div>
+    <div class="acciones-barra">
+      <button class="btn primario" id="btnNuevo">+ Nuevo vehículo</button>
+      <button class="btn" id="btnSimular">Simular venta</button>
+      <button class="btn" id="btnRecargar">Recargar</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="tarjetas">
+      <article class="tarjeta"><span class="etiqueta">Total en stock</span><strong id="statTotal">0</strong><span class="detalle">vehículos</span></article>
+      <article class="tarjeta"><span class="etiqueta">Nuevos (0 km)</span><strong id="statNuevos">0</strong><span class="detalle">unidades</span></article>
+      <article class="tarjeta"><span class="etiqueta">Usados</span><strong id="statUsados">0</strong><span class="detalle">unidades</span></article>
+      <article class="tarjeta"><span class="etiqueta">Valor comercial</span><strong id="statValor">$0</strong><span class="detalle">suma de precios</span></article>
+    </section>
+
+    <section class="panel filtros">
+      <div class="campo">
+        <label for="filtroTipo">Tipo</label>
+        <select id="filtroTipo"><option value="">Todos</option></select>
+      </div>
+      <div class="campo">
+        <label for="filtroEstado">Estado</label>
+        <select id="filtroEstado"><option value="">Todos</option></select>
+      </div>
+      <div class="campo crece">
+        <label for="filtroMarca">Marca</label>
+        <input id="filtroMarca" type="text" placeholder="Ej: Toyota, Ford, Honda...">
+      </div>
+      <button class="btn primario" id="btnFiltrar">Aplicar filtros</button>
+      <button class="btn" id="btnLimpiar">Limpiar</button>
+    </section>
+
+    <section class="panel tabla-panel">
+      <div class="tabla-cabecera">
+        <h2>Stock de vehículos</h2>
+        <span id="contador" class="contador">0 resultados</span>
+      </div>
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Marca / Modelo</th><th>Año</th><th>Color</th>
+              <th>Estado</th><th>Tipo</th><th>Precio</th><th>Patente</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoTabla"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Modal: alta -->
+  <div class="modal" id="modalAlta" hidden>
+    <div class="modal-caja">
+      <div class="modal-cabecera"><h2>Alta de vehículo</h2><button class="cerrar" data-cerrar="modalAlta">×</button></div>
+      <form id="formAlta" class="modal-cuerpo">
+        <div class="rejilla">
+          <div class="campo"><label for="tipo">Tipo *</label><select id="tipo" name="tipo" required></select></div>
+          <div class="campo"><label for="id">Identificador *</label><input id="id" name="id" required placeholder="Patente o código"></div>
+          <div class="campo"><label for="marca">Marca *</label><input id="marca" name="marca" required></div>
+          <div class="campo"><label for="modelo">Modelo *</label><input id="modelo" name="modelo" required></div>
+          <div class="campo"><label for="anio">Año *</label><input id="anio" name="anio" type="number" min="1950" max="2026" value="2024" required></div>
+          <div class="campo"><label for="color">Color *</label><input id="color" name="color" required></div>
+          <div class="campo"><label for="estado">Estado *</label><select id="estado" name="estado" required></select></div>
+          <div class="campo" id="campoKm" hidden><label for="kilometraje">Kilometraje *</label><input id="kilometraje" name="kilometraje" type="number" min="0.1" step="0.1"></div>
+          <div class="campo"><label for="precio">Precio *</label><input id="precio" name="precio" type="number" min="0.01" step="0.01" required></div>
+
+          <div class="campo" id="campoCarroceria" hidden><label for="carroceria">Carrocería *</label><select id="carroceria" name="carroceria"></select></div>
+          <div class="campo" id="campoPuertas" hidden><label for="puertas">Puertas *</label><input id="puertas" name="puertas" type="number" min="2" max="5" value="4"></div>
+          <div class="campo" id="campoCabina" hidden><label for="cabina">Cabina / caja *</label><select id="cabina" name="cabina"></select></div>
+          <div class="campo" id="campoTraccion" hidden><label for="traccion">Tracción *</label><select id="traccion" name="traccion"></select></div>
+          <div class="campo" id="campoCarga" hidden><label for="capacidadCarga">Carga (kg) *</label><input id="capacidadCarga" name="capacidadCarga" type="number" min="0.1" step="0.1"></div>
+          <div class="campo" id="campoEstilo" hidden><label for="estilo">Estilo *</label><select id="estilo" name="estilo"></select></div>
+          <div class="campo" id="campoCilindrada" hidden><label for="cilindrada">Cilindrada (cc) *</label><input id="cilindrada" name="cilindrada" type="number" min="1"></div>
+        </div>
+        <div class="modal-pie">
+          <button type="button" class="btn" data-cerrar="modalAlta">Cancelar</button>
+          <button type="submit" class="btn primario">Guardar vehículo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: editar -->
+  <div class="modal" id="modalEditar" hidden>
+    <div class="modal-caja pequena">
+      <div class="modal-cabecera"><h2>Modificar vehículo</h2><button class="cerrar" data-cerrar="modalEditar">×</button></div>
+      <form id="formEditar" class="modal-cuerpo">
+        <input type="hidden" id="editarId">
+        <p class="aviso" id="editarFicha"></p>
+        <div class="campo"><label for="editarPrecio">Nuevo precio</label><input id="editarPrecio" type="number" min="0.01" step="0.01"></div>
+        <div class="campo"><label for="editarColor">Nuevo color</label><input id="editarColor" type="text"></div>
+        <div class="modal-pie">
+          <button type="button" class="btn" data-cerrar="modalEditar">Cancelar</button>
+          <button type="submit" class="btn primario">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: simulación -->
+  <div class="modal" id="modalSimular" hidden>
+    <div class="modal-caja pequena">
+      <div class="modal-cabecera"><h2>Simular venta</h2><button class="cerrar" data-cerrar="modalSimular">×</button></div>
+      <form id="formSimular" class="modal-cuerpo">
+        <div class="campo"><label for="simularId">Vehículo</label><select id="simularId" required></select></div>
+        <div class="campo"><label for="simularDescuento">Descuento (%)</label><input id="simularDescuento" type="number" min="0" max="100" step="1" value="0" required></div>
+        <div id="resultadoSimulacion" class="resultado" hidden></div>
+        <div class="modal-pie">
+          <button type="button" class="btn" data-cerrar="modalSimular">Cerrar</button>
+          <button type="submit" class="btn primario">Calcular</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: ficha -->
+  <div class="modal" id="modalFicha" hidden>
+    <div class="modal-caja pequena">
+      <div class="modal-cabecera"><h2>Ficha técnica</h2><button class="cerrar" data-cerrar="modalFicha">×</button></div>
+      <div class="modal-cuerpo"><pre id="fichaTexto" class="ficha"></pre></div>
+    </div>
+  </div>
+</body>
+</html>

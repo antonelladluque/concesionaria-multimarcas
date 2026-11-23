@@ -1,0 +1,10 @@
+# Artefactos de compilación
+out/
+*.class
+
+# Datos generados en tiempo de ejecución
+stock.csv
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

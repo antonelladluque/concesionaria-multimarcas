@@ -1,0 +1,4425 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Concesionaria Multimarcas - Codigo Java 17 + Web</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#0d1117;color:#c9d1d9}header{padding:22px 28px;background:#161b22;border-bottom:1px solid #30363d}h1{margin:0;font-size:22px;color:#58a6ff}p{margin:6px 0;color:#8b949e}main{padding:18px 28px}details{background:#161b22;border:1px solid #30363d;border-radius:6px;margin:8px 0}summary{padding:10px 14px;cursor:pointer;font-weight:600;color:#79c0ff}pre{margin:0;padding:14px;overflow:auto;max-height:560px;background:#0d1117;border-top:1px solid #30363d}code{font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.45;color:#e6edf3}a{color:#58a6ff}.pill{display:inline-block;padding:2px 8px;border:1px solid #30363d;border-radius:12px;margin-right:6px;color:#7ee787}</style></head><body>
+<header><h1>Sistema de Gestion de Stock - Concesionaria Multimarcas</h1><p><span class="pill">Java 17+</span><span class="pill">30 clases Java</span><span class="pill">Capa web incluida</span><span class="pill">Compilado y probado</span></p><p>Aplicacion web: <a href="http://localhost:8080">http://localhost:8080</a> | <a href="README.md">README.md</a></p></header><main>
+<details><summary>excepciones/DatoInvalidoException.java</summary><pre><code>package excepciones;
+
+/**
+ * Excepci&#243;n de dominio lanzada cuando un dato de entrada no cumple las reglas
+ * de validaci&#243;n (rango de a&#241;o, texto vac&#237;o, precio negativo, etc.).
+ *
+ * &lt;p&gt;&lt;b&gt;Decisi&#243;n de dise&#241;o:&lt;/b&gt; es una excepci&#243;n &lt;i&gt;checked&lt;/i&gt; para obligar a
+ * la capa de vista a informar el error al usuario y a la capa de servicio a
+ * decidir si la operaci&#243;n se aborta.&lt;/p&gt;
+ */
+public class DatoInvalidoException extends Exception {
+
+    /** Versi&#243;n serializable de la excepci&#243;n. */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Crea la excepci&#243;n con un mensaje descriptivo.
+     *
+     * @param mensaje detalle del dato inv&#225;lido
+     */
+    public DatoInvalidoException(String mensaje) {
+        super(mensaje);
+    }
+
+    /**
+     * Crea la excepci&#243;n con un mensaje y la causa original.
+     *
+     * @param mensaje detalle del dato inv&#225;lido
+     * @param causa   excepci&#243;n de bajo nivel que origin&#243; el error
+     */
+    public DatoInvalidoException(String mensaje, Throwable causa) {
+        super(mensaje, causa);
+    }
+}
+</code></pre></details>
+<details><summary>excepciones/KilometrajeInconsistenteException.java</summary><pre><code>package excepciones;
+
+/**
+ * Excepci&#243;n de dominio lanzada cuando el kilometraje no es coherente con el
+ * estado del veh&#237;culo: un veh&#237;culo {@code NUEVO} debe tener 0 km y uno
+ * {@code USADO} debe tener kilometraje estrictamente mayor que 0.
+ */
+public class KilometrajeInconsistenteException extends DatoInvalidoException {
+
+    /** Versi&#243;n serializable de la excepci&#243;n. */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Crea la excepci&#243;n con el mensaje del conflicto detectado.
+     *
+     * @param mensaje detalle de la incoherencia
+     */
+    public KilometrajeInconsistenteException(String mensaje) {
+        super(mensaje);
+    }
+}
+</code></pre></details>
+<details><summary>excepciones/VehiculoDuplicadoException.java</summary><pre><code>package excepciones;
+
+/**
+ * Excepci&#243;n de dominio lanzada al intentar dar de alta un veh&#237;culo cuyo
+ * identificador (patente, chasis o c&#243;digo de stock) ya existe en el repositorio.
+ */
+public class VehiculoDuplicadoException extends Exception {
+
+    /** Versi&#243;n serializable de la excepci&#243;n. */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Crea la excepci&#243;n indicando el identificador repetido.
+     *
+     * @param identificador identificador duplicado
+     */
+    public VehiculoDuplicadoException(String identificador) {
+        super(&quot;Ya existe un veh&#237;culo con el identificador &#39;&quot; + identificador + &quot;&#39;.&quot;);
+    }
+
+    /**
+     * Crea la excepci&#243;n con un mensaje y la causa original.
+     *
+     * @param mensaje detalle del error
+     * @param causa   excepci&#243;n que origin&#243; el conflicto
+     */
+    public VehiculoDuplicadoException(String mensaje, Throwable causa) {
+        super(mensaje, causa);
+    }
+}
+</code></pre></details>
+<details><summary>excepciones/VehiculoNoEncontradoException.java</summary><pre><code>package excepciones;
+
+/**
+ * Excepci&#243;n de dominio lanzada cuando no se encuentra un veh&#237;culo para el
+ * identificador indicado en una operaci&#243;n de b&#250;squeda, modificaci&#243;n o baja.
+ */
+public class VehiculoNoEncontradoException extends Exception {
+
+    /** Versi&#243;n serializable de la excepci&#243;n. */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Crea la excepci&#243;n indicando el identificador buscado.
+     *
+     * @param identificador identificador no encontrado
+     */
+    public VehiculoNoEncontradoException(String identificador) {
+        super(&quot;No se encontr&#243; ning&#250;n veh&#237;culo con el identificador &#39;&quot; + identificador + &quot;&#39;.&quot;);
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Automovil.java</summary><pre><code>package modelo;
+
+import excepciones.DatoInvalidoException;
+
+import java.io.Serializable;
+import java.util.Locale;
+
+/**
+ * Autom&#243;vil de pasajeros. Especifica carrocer&#237;a y cantidad de puertas, y
+ * define su propia f&#243;rmula de impuesto de patente.
+ */
+public class Automovil extends Vehiculo implements Serializable {
+
+    /** Versi&#243;n serializable de la clase. */
+    private static final long serialVersionUID = 1L;
+
+    /** Impuesto fijo base. */
+    private static final Double IMPUESTO_BASE = 60.0;
+
+    /** Al&#237;cuota aplicada al precio. */
+    private static final Double ALICUOTA = 0.015;
+
+    /** Recargo para veh&#237;culos fabricados a partir de 2020. */
+    private static final Double RECARGO_MODERNO = 40.0;
+
+    /** A&#241;o a partir del cual se aplica el recargo. */
+    private static final Integer ANIO_RECARGO = 2020;
+
+    /** Tipo de carrocer&#237;a. */
+    private TipoCarroceria carroceria;
+
+    /** Cantidad de puertas. */
+    private Integer puertas;
+
+    /**
+     * Constructor vac&#237;o requerido por el est&#225;ndar JavaBean.
+     */
+    public Automovil() {
+        super();
+    }
+
+    /**
+     * Constructor parametrizado completo.
+     *
+     * @param identificador identificador &#250;nico
+     * @param marca         marca
+     * @param modelo        modelo
+     * @param anio          a&#241;o de fabricaci&#243;n
+     * @param color         color
+     * @param estado        estado comercial
+     * @param kilometraje   kilometraje
+     * @param precio        precio de venta
+     * @param carroceria    tipo de carrocer&#237;a
+     * @param puertas       cantidad de puertas
+     */
+    public Automovil(String identificador, String marca, String modelo, Integer anio,
+                     String color, EstadoVehiculo estado, Double kilometraje, Double precio,
+                     TipoCarroceria carroceria, Integer puertas) {
+        super(identificador, marca, modelo, anio, color, estado, kilometraje, precio);
+        this.carroceria = carroceria;
+        this.puertas = puertas;
+    }
+
+    /**
+     * Devuelve la carrocer&#237;a.
+     *
+     * @return tipo de carrocer&#237;a
+     */
+    public TipoCarroceria getCarroceria() {
+        return carroceria;
+    }
+
+    /**
+     * Establece la carrocer&#237;a.
+     *
+     * @param carroceria tipo de carrocer&#237;a
+     */
+    public void setCarroceria(TipoCarroceria carroceria) {
+        this.carroceria = carroceria;
+    }
+
+    /**
+     * Devuelve la cantidad de puertas.
+     *
+     * @return cantidad de puertas
+     */
+    public Integer getPuertas() {
+        return puertas;
+    }
+
+    /**
+     * Establece la cantidad de puertas.
+     *
+     * @param puertas cantidad de puertas
+     */
+    public void setPuertas(Integer puertas) {
+        this.puertas = puertas;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TipoVehiculo obtenerTipo() {
+        return TipoVehiculo.AUTOMOVIL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void validarReglasEspecificas() throws DatoInvalidoException {
+        if (carroceria == null) {
+            throw new DatoInvalidoException(&quot;La carrocer&#237;a del autom&#243;vil es obligatoria.&quot;);
+        }
+        if (puertas == null || puertas &lt; 2 || puertas &gt; 5) {
+            throw new DatoInvalidoException(&quot;La cantidad de puertas debe estar entre 2 y 5.&quot;);
+        }
+    }
+
+    /**
+     * Calcula el impuesto: 60 + 1,5% del precio + 40 si es del a&#241;o 2020 o posterior.
+     *
+     * @return monto del impuesto anual de patente
+     */
+    @Override
+    public Double calcularImpuestoPatente() {
+        Double recargo = getAnio() &gt;= ANIO_RECARGO ? RECARGO_MODERNO : 0.0;
+        return redondear(IMPUESTO_BASE + getPrecio() * ALICUOTA + recargo);
+    }
+
+    /**
+     * Devuelve la ficha t&#233;cnica extendida del autom&#243;vil.
+     *
+     * @return ficha t&#233;cnica legible
+     */
+    @Override
+    public String obtenerFichaTecnicaDetallada() {
+        return &quot;AUTOM&#211;VIL | &quot; + getMarca() + &quot; &quot; + getModelo() + &quot; &quot; + getAnio()
+                + &quot; | Carrocer&#237;a: &quot; + carroceria.getEtiqueta()
+                + &quot; | Puertas: &quot; + puertas
+                + &quot; | &quot; + getColor()
+                + &quot; | &quot; + getEstado().getEtiqueta()
+                + &quot; | &quot; + String.format(Locale.US, &quot;%.0f&quot;, getKilometraje()) + &quot; km&quot;
+                + &quot; | Precio: $&quot; + String.format(Locale.US, &quot;%.2f&quot;, getPrecio());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return &quot;Automovil{&quot; + super.toString()
+                + &quot;, carroceria=&quot; + carroceria
+                + &quot;, puertas=&quot; + puertas + &#39;}&#39;;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Camioneta.java</summary><pre><code>package modelo;
+
+import excepciones.DatoInvalidoException;
+
+import java.io.Serializable;
+import java.util.Locale;
+
+/**
+ * Camioneta o utilitario. Especifica cabina, tracci&#243;n y capacidad de carga.
+ */
+public class Camioneta extends Vehiculo implements Serializable {
+
+    /** Versi&#243;n serializable de la clase. */
+    private static final long serialVersionUID = 1L;
+
+    /** Impuesto fijo base. */
+    private static final Double IMPUESTO_BASE = 90.0;
+
+    /** Al&#237;cuota aplicada al precio. */
+    private static final Double ALICUOTA = 0.02;
+
+    /** Cargo por kilogramo de capacidad de carga. */
+    private static final Double CARGO_POR_KG = 0.5;
+
+    /** Recargo por tracci&#243;n 4x4. */
+    private static final Double RECARGO_4X4 = 50.0;
+
+    /** Configuraci&#243;n de cabina/caja. */
+    private TipoCabina cabina;
+
+    /** Tipo de tracci&#243;n. */
+    private TipoTraccion traccion;
+
+    /** Capacidad de carga en kilogramos. */
+    private Double capacidadCarga;
+
+    /**
+     * Constructor vac&#237;o requerido por el est&#225;ndar JavaBean.
+     */
+    public Camioneta() {
+        super();
+    }
+
+    /**
+     * Constructor parametrizado completo.
+     *
+     * @param identificador  identificador &#250;nico
+     * @param marca          marca
+     * @param modelo         modelo
+     * @param anio           a&#241;o de fabricaci&#243;n
+     * @param color          color
+     * @param estado         estado comercial
+     * @param kilometraje    kilometraje
+     * @param precio         precio de venta
+     * @param cabina         configuraci&#243;n de cabina/caja
+     * @param traccion       tipo de tracci&#243;n
+     * @param capacidadCarga capacidad de carga en kg
+     */
+    public Camioneta(String identificador, String marca, String modelo, Integer anio,
+                     String color, EstadoVehiculo estado, Double kilometraje, Double precio,
+                     TipoCabina cabina, TipoTraccion traccion, Double capacidadCarga) {
+        super(identificador, marca, modelo, anio, color, estado, kilometraje, precio);
+        this.cabina = cabina;
+        this.traccion = traccion;
+        this.capacidadCarga = capacidadCarga;
+    }
+
+    /**
+     * Devuelve la configuraci&#243;n de cabina.
+     *
+     * @return cabina/caja de la camioneta
+     */
+    public TipoCabina getCabina() {
+        return cabina;
+    }
+
+    /**
+     * Establece la configuraci&#243;n de cabina.
+     *
+     * @param cabina cabina/caja de la camioneta
+     */
+    public void setCabina(TipoCabina cabina) {
+        this.cabina = cabina;
+    }
+
+    /**
+     * Devuelve el tipo de tracci&#243;n.
+     *
+     * @return tracci&#243;n de la camioneta
+     */
+    public TipoTraccion getTraccion() {
+        return traccion;
+    }
+
+    /**
+     * Establece el tipo de tracci&#243;n.
+     *
+     * @param traccion tracci&#243;n de la camioneta
+     */
+    public void setTraccion(TipoTraccion traccion) {
+        this.traccion = traccion;
+    }
+
+    /**
+     * Devuelve la capacidad de carga.
+     *
+     * @return capacidad de carga en kilogramos
+     */
+    public Double getCapacidadCarga() {
+        return capacidadCarga;
+    }
+
+    /**
+     * Establece la capacidad de carga.
+     *
+     * @param capacidadCarga capacidad de carga en kilogramos
+     */
+    public void setCapacidadCarga(Double capacidadCarga) {
+        this.capacidadCarga = capacidadCarga;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TipoVehiculo obtenerTipo() {
+        return TipoVehiculo.CAMIONETA;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void validarReglasEspecificas() throws DatoInvalidoException {
+        if (cabina == null) {
+            throw new DatoInvalidoException(&quot;El tipo de cabina de la camioneta es obligatorio.&quot;);
+        }
+        if (traccion == null) {
+            throw new DatoInvalidoException(&quot;El tipo de tracci&#243;n de la camioneta es obligatorio.&quot;);
+        }
+        if (capacidadCarga == null || capacidadCarga &lt;= 0) {
+            throw new DatoInvalidoException(&quot;La capacidad de carga debe ser mayor que cero.&quot;);
+        }
+    }
+
+    /**
+     * Calcula el impuesto: 90 + 2% del precio + 0,5 por kg de carga + 50 si es 4x4.
+     *
+     * @return monto del impuesto anual de patente
+     */
+    @Override
+    public Double calcularImpuestoPatente() {
+        Double recargo = traccion == TipoTraccion.TRACCION_4X4 ? RECARGO_4X4 : 0.0;
+        return redondear(IMPUESTO_BASE + getPrecio() * ALICUOTA
+                + capacidadCarga * CARGO_POR_KG + recargo);
+    }
+
+    /**
+     * Devuelve la ficha t&#233;cnica extendida de la camioneta.
+     *
+     * @return ficha t&#233;cnica legible
+     */
+    @Override
+    public String obtenerFichaTecnicaDetallada() {
+        return &quot;CAMIONETA | &quot; + getMarca() + &quot; &quot; + getModelo() + &quot; &quot; + getAnio()
+                + &quot; | Cabina: &quot; + cabina.getEtiqueta()
+                + &quot; | Tracci&#243;n: &quot; + traccion.getEtiqueta()
+                + &quot; | Carga: &quot; + capacidadCarga + &quot; kg&quot;
+                + &quot; | &quot; + getColor()
+                + &quot; | &quot; + getEstado().getEtiqueta()
+                + &quot; | &quot; + String.format(Locale.US, &quot;%.0f&quot;, getKilometraje()) + &quot; km&quot;
+                + &quot; | Precio: $&quot; + String.format(Locale.US, &quot;%.2f&quot;, getPrecio());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return &quot;Camioneta{&quot; + super.toString()
+                + &quot;, cabina=&quot; + cabina
+                + &quot;, traccion=&quot; + traccion
+                + &quot;, capacidadCarga=&quot; + capacidadCarga + &#39;}&#39;;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/EstadoVehiculo.java</summary><pre><code>package modelo;
+
+/**
+ * Estado comercial de un veh&#237;culo dentro del stock de la concesionaria.
+ */
+public enum EstadoVehiculo {
+
+    /** Veh&#237;culo de 0 kil&#243;metros. */
+    NUEVO(&quot;Nuevo (0 km)&quot;),
+    /** Veh&#237;culo con uso previo y kilometraje mayor que cero. */
+    USADO(&quot;Usado&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo del estado
+     */
+    EstadoVehiculo(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible del estado.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/EstiloMotocicleta.java</summary><pre><code>package modelo;
+
+/**
+ * Estilos o tipos de motocicleta.
+ */
+public enum EstiloMotocicleta {
+
+    /** Naked. */
+    NAKED(&quot;Naked&quot;),
+    /** Enduro. */
+    ENDURO(&quot;Enduro&quot;),
+    /** Touring. */
+    TOURING(&quot;Touring&quot;),
+    /** Scooter. */
+    SCOOTER(&quot;Scooter&quot;),
+    /** Deportiva. */
+    DEPORTIVA(&quot;Deportiva&quot;),
+    /** Custom. */
+    CUSTOM(&quot;Custom&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo del estilo
+     */
+    EstiloMotocicleta(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Motocicleta.java</summary><pre><code>package modelo;
+
+import excepciones.DatoInvalidoException;
+
+import java.io.Serializable;
+import java.util.Locale;
+
+/**
+ * Motocicleta. Especifica estilo y cilindrada, con su propia f&#243;rmula tributaria.
+ */
+public class Motocicleta extends Vehiculo implements Serializable {
+
+    /** Versi&#243;n serializable de la clase. */
+    private static final long serialVersionUID = 1L;
+
+    /** Impuesto fijo base. */
+    private static final Double IMPUESTO_BASE = 25.0;
+
+    /** Al&#237;cuota aplicada al precio. */
+    private static final Double ALICUOTA = 0.01;
+
+    /** Cargo por cent&#237;metro c&#250;bico. */
+    private static final Double CARGO_POR_CC = 0.15;
+
+    /** Estilo de la motocicleta. */
+    private EstiloMotocicleta estilo;
+
+    /** Cilindrada en cent&#237;metros c&#250;bicos. */
+    private Integer cilindrada;
+
+    /**
+     * Constructor vac&#237;o requerido por el est&#225;ndar JavaBean.
+     */
+    public Motocicleta() {
+        super();
+    }
+
+    /**
+     * Constructor parametrizado completo.
+     *
+     * @param identificador identificador &#250;nico
+     * @param marca         marca
+     * @param modelo        modelo
+     * @param anio          a&#241;o de fabricaci&#243;n
+     * @param color         color
+     * @param estado        estado comercial
+     * @param kilometraje   kilometraje
+     * @param precio        precio de venta
+     * @param estilo        estilo de motocicleta
+     * @param cilindrada    cilindrada en cc
+     */
+    public Motocicleta(String identificador, String marca, String modelo, Integer anio,
+                       String color, EstadoVehiculo estado, Double kilometraje, Double precio,
+                       EstiloMotocicleta estilo, Integer cilindrada) {
+        super(identificador, marca, modelo, anio, color, estado, kilometraje, precio);
+        this.estilo = estilo;
+        this.cilindrada = cilindrada;
+    }
+
+    /**
+     * Devuelve el estilo de la motocicleta.
+     *
+     * @return estilo de la motocicleta
+     */
+    public EstiloMotocicleta getEstilo() {
+        return estilo;
+    }
+
+    /**
+     * Establece el estilo de la motocicleta.
+     *
+     * @param estilo estilo de la motocicleta
+     */
+    public void setEstilo(EstiloMotocicleta estilo) {
+        this.estilo = estilo;
+    }
+
+    /**
+     * Devuelve la cilindrada.
+     *
+     * @return cilindrada en cent&#237;metros c&#250;bicos
+     */
+    public Integer getCilindrada() {
+        return cilindrada;
+    }
+
+    /**
+     * Establece la cilindrada.
+     *
+     * @param cilindrada cilindrada en cent&#237;metros c&#250;bicos
+     */
+    public void setCilindrada(Integer cilindrada) {
+        this.cilindrada = cilindrada;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TipoVehiculo obtenerTipo() {
+        return TipoVehiculo.MOTOCICLETA;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void validarReglasEspecificas() throws DatoInvalidoException {
+        if (estilo == null) {
+            throw new DatoInvalidoException(&quot;El estilo de la motocicleta es obligatorio.&quot;);
+        }
+        if (cilindrada == null || cilindrada &lt;= 0) {
+            throw new DatoInvalidoException(&quot;La cilindrada debe ser mayor que cero.&quot;);
+        }
+    }
+
+    /**
+     * Calcula el impuesto: 25 + 1% del precio + 0,15 por cc.
+     *
+     * @return monto del impuesto anual de patente
+     */
+    @Override
+    public Double calcularImpuestoPatente() {
+        return redondear(IMPUESTO_BASE + getPrecio() * ALICUOTA + cilindrada * CARGO_POR_CC);
+    }
+
+    /**
+     * Devuelve la ficha t&#233;cnica extendida de la motocicleta.
+     *
+     * @return ficha t&#233;cnica legible
+     */
+    @Override
+    public String obtenerFichaTecnicaDetallada() {
+        return &quot;MOTOCICLETA | &quot; + getMarca() + &quot; &quot; + getModelo() + &quot; &quot; + getAnio()
+                + &quot; | Estilo: &quot; + estilo.getEtiqueta()
+                + &quot; | Cilindrada: &quot; + cilindrada + &quot; cc&quot;
+                + &quot; | &quot; + getColor()
+                + &quot; | &quot; + getEstado().getEtiqueta()
+                + &quot; | &quot; + String.format(Locale.US, &quot;%.0f&quot;, getKilometraje()) + &quot; km&quot;
+                + &quot; | Precio: $&quot; + String.format(Locale.US, &quot;%.2f&quot;, getPrecio());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return &quot;Motocicleta{&quot; + super.toString()
+                + &quot;, estilo=&quot; + estilo
+                + &quot;, cilindrada=&quot; + cilindrada + &#39;}&#39;;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/SimulacionVenta.java</summary><pre><code>package modelo;
+
+import java.io.Serializable;
+
+/**
+ * Objeto de transferencia inmutable con el resultado de una simulaci&#243;n de venta.
+ *
+ * &lt;p&gt;&lt;b&gt;Remarks:&lt;/b&gt; se separa el resultado de la operaci&#243;n del veh&#237;culo para
+ * que la vista pueda formatearlo sin acceder a reglas de negocio.&lt;/p&gt;
+ */
+public class SimulacionVenta implements Serializable {
+
+    /** Versi&#243;n serializable de la clase. */
+    private static final long serialVersionUID = 1L;
+
+    /** Veh&#237;culo simulado. */
+    private final Vehiculo vehiculo;
+
+    /** Porcentaje de descuento aplicado. */
+    private final Double porcentajeDescuento;
+
+    /** Precio final luego del descuento. */
+    private final Double precioFinal;
+
+    /** Impuesto de patente del veh&#237;culo. */
+    private final Double impuestoPatente;
+
+    /** Valor tasado del veh&#237;culo. */
+    private final Double valorTasado;
+
+    /** Total a cobrar incluyendo el impuesto. */
+    private final Double total;
+
+    /**
+     * Crea una simulaci&#243;n con todos sus importes ya calculados.
+     *
+     * @param vehiculo             veh&#237;culo simulado
+     * @param porcentajeDescuento  descuento aplicado
+     * @param precioFinal          precio con descuento
+     * @param impuestoPatente      impuesto de patente
+     * @param valorTasado          valor tasado
+     * @param total                precio final m&#225;s impuesto
+     */
+    public SimulacionVenta(Vehiculo vehiculo, Double porcentajeDescuento, Double precioFinal,
+                           Double impuestoPatente, Double valorTasado, Double total) {
+        this.vehiculo = vehiculo;
+        this.porcentajeDescuento = porcentajeDescuento;
+        this.precioFinal = precioFinal;
+        this.impuestoPatente = impuestoPatente;
+        this.valorTasado = valorTasado;
+        this.total = total;
+    }
+
+    /**
+     * Devuelve el veh&#237;culo simulado.
+     *
+     * @return veh&#237;culo simulado
+     */
+    public Vehiculo getVehiculo() {
+        return vehiculo;
+    }
+
+    /**
+     * Devuelve el descuento aplicado.
+     *
+     * @return porcentaje de descuento
+     */
+    public Double getPorcentajeDescuento() {
+        return porcentajeDescuento;
+    }
+
+    /**
+     * Devuelve el precio final con descuento.
+     *
+     * @return precio final
+     */
+    public Double getPrecioFinal() {
+        return precioFinal;
+    }
+
+    /**
+     * Devuelve el impuesto de patente.
+     *
+     * @return impuesto calculado
+     */
+    public Double getImpuestoPatente() {
+        return impuestoPatente;
+    }
+
+    /**
+     * Devuelve el valor tasado.
+     *
+     * @return valor tasado
+     */
+    public Double getValorTasado() {
+        return valorTasado;
+    }
+
+    /**
+     * Devuelve el total a cobrar.
+     *
+     * @return total con impuesto
+     */
+    public Double getTotal() {
+        return total;
+    }
+
+    /**
+     * Devuelve una representaci&#243;n textual de la simulaci&#243;n.
+     *
+     * @return resumen legible de la simulaci&#243;n
+     */
+    @Override
+    public String toString() {
+        return &quot;SimulacionVenta{vehiculo=&quot; + vehiculo.getIdentificador()
+                + &quot;, descuento=&quot; + porcentajeDescuento + &quot;%&quot;
+                + &quot;, precioFinal=&quot; + precioFinal
+                + &quot;, impuestoPatente=&quot; + impuestoPatente
+                + &quot;, valorTasado=&quot; + valorTasado
+                + &quot;, total=&quot; + total + &#39;}&#39;;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Tasable.java</summary><pre><code>package modelo;
+
+/**
+ * Interfaz de comportamiento para veh&#237;culos sujetos a tasaci&#243;n e impuestos.
+ */
+public interface Tasable {
+
+    /**
+     * Calcula el impuesto anual de patente seg&#250;n las reglas del tipo de veh&#237;culo.
+     *
+     * @return monto del impuesto, mayor o igual que cero
+     */
+    Double calcularImpuestoPatente();
+
+    /**
+     * Calcula el valor tasado del veh&#237;culo (valor comercial de referencia).
+     *
+     * @return valor tasado estimado
+     */
+    Double calcularValorTasado();
+}
+</code></pre></details>
+<details><summary>modelo/TipoCabina.java</summary><pre><code>package modelo;
+
+/**
+ * Configuraci&#243;n de cabina/caja de una camioneta.
+ */
+public enum TipoCabina {
+
+    /** Pick-up con cabina simple. */
+    CABINA_SIMPLE(&quot;Pick-up cabina simple&quot;),
+    /** Pick-up con doble cabina. */
+    DOBLE_CABINA(&quot;Pick-up doble cabina&quot;),
+    /** Utilitario cerrado. */
+    UTILITARIO(&quot;Utilitario&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo de la cabina
+     */
+    TipoCabina(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/TipoCarroceria.java</summary><pre><code>package modelo;
+
+/**
+ * Carrocer&#237;as posibles de un autom&#243;vil.
+ */
+public enum TipoCarroceria {
+
+    /** Sed&#225;n. */
+    SEDAN(&quot;Sed&#225;n&quot;),
+    /** Hatchback. */
+    HATCHBACK(&quot;Hatchback&quot;),
+    /** Coup&#233;. */
+    COUPE(&quot;Coup&#233;&quot;),
+    /** SUV. */
+    SUV(&quot;SUV&quot;),
+    /** Familiar / station wagon. */
+    FAMILIAR(&quot;Familiar&quot;),
+    /** Convertible. */
+    CONVERTIBLE(&quot;Convertible&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo de la carrocer&#237;a
+     */
+    TipoCarroceria(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/TipoTraccion.java</summary><pre><code>package modelo;
+
+/**
+ * Tipo de tracci&#243;n de una camioneta.
+ */
+public enum TipoTraccion {
+
+    /** Tracci&#243;n 4x2. */
+    TRACCION_4X2(&quot;4x2&quot;),
+    /** Tracci&#243;n 4x4. */
+    TRACCION_4X4(&quot;4x4&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo de la tracci&#243;n
+     */
+    TipoTraccion(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/TipoVehiculo.java</summary><pre><code>package modelo;
+
+/**
+ * Tipos de veh&#237;culos comercializados. Se usa en los filtros y en la
+ * reconstrucci&#243;n polim&#243;rfica de los registros le&#237;dos desde el archivo CSV.
+ */
+public enum TipoVehiculo {
+
+    /** Autom&#243;vil de pasajeros. */
+    AUTOMOVIL(&quot;Autom&#243;vil&quot;),
+    /** Camioneta / utilitario. */
+    CAMIONETA(&quot;Camioneta&quot;),
+    /** Motocicleta. */
+    MOTOCICLETA(&quot;Motocicleta&quot;);
+
+    /** Etiqueta legible para la consola. */
+    private final String etiqueta;
+
+    /**
+     * Inicializa el valor del enum con su etiqueta.
+     *
+     * @param etiqueta texto descriptivo del tipo
+     */
+    TipoVehiculo(String etiqueta) {
+        this.etiqueta = etiqueta;
+    }
+
+    /**
+     * Devuelve la etiqueta legible del tipo.
+     *
+     * @return texto descriptivo
+     */
+    public String getEtiqueta() {
+        return etiqueta;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Vehiculo.java</summary><pre><code>package modelo;
+
+import excepciones.DatoInvalidoException;
+import excepciones.KilometrajeInconsistenteException;
+
+import java.io.Serializable;
+import java.util.Objects;
+
+/**
+ * Clase abstracta base de todos los veh&#237;culos de la concesionaria.
+ *
+ * &lt;p&gt;Define la identidad de negocio (identificador &#250;nico), los atributos
+ * comunes, las reglas de validaci&#243;n compartidas y el contrato polim&#243;rfico que
+ * cada subclase debe implementar. Se declara {@link Serializable} para
+ * permitir, si se desea, persistencia binaria adem&#225;s del CSV implementado.&lt;/p&gt;
+ *
+ * &lt;p&gt;&lt;b&gt;Remarks:&lt;/b&gt; se usan exclusivamente clases &lt;i&gt;wrapper&lt;/i&gt; ({@link Integer},
+ * {@link Double}) para que un dato ausente sea distinguible de un cero y para
+ * centralizar las conversiones desde la entrada de consola y desde el archivo.&lt;/p&gt;
+ */
+public abstract class Vehiculo implements Serializable, Vendible, Tasable {
+
+    /** Versi&#243;n serializable de la clase. */
+    private static final long serialVersionUID = 1L;
+
+    /** A&#241;o m&#237;nimo aceptado para un veh&#237;culo. */
+    public static final Integer ANIO_MINIMO = 1950;
+
+    /** A&#241;o m&#225;ximo aceptado para un veh&#237;culo. */
+    public static final Integer ANIO_MAXIMO = 2026;
+
+    /** Porcentaje aplicado al calcular el valor tasado. */
+    private static final Double FACTOR_TASACION = 0.95;
+
+    /** Identificador &#250;nico de negocio: patente, chasis o c&#243;digo de stock. */
+    private String identificador;
+
+    /** Marca del veh&#237;culo. */
+    private String marca;
+
+    /** Modelo del veh&#237;culo. */
+    private String modelo;
+
+    /** A&#241;o de fabricaci&#243;n. */
+    private Integer anio;
+
+    /** Color del veh&#237;culo. */
+    private String color;
+
+    /** Estado comercial (nuevo o usado). */
+    private EstadoVehiculo estado;
+
+    /** Kilometraje registrado. */
+    private Double kilometraje;
+
+    /** Precio de venta del veh&#237;culo. */
+    private Double precio;
+
+    /**
+     * Constructor vac&#237;o requerido por el est&#225;ndar JavaBean.
+     */
+    public Vehiculo() {
+    }
+
+    /**
+     * Constructor parametrizado con los atributos comunes.
+     *
+     * @param identificador identificador &#250;nico
+     * @param marca         marca del veh&#237;culo
+     * @param modelo        modelo del veh&#237;culo
+     * @param anio          a&#241;o de fabricaci&#243;n
+     * @param color         color del veh&#237;culo
+     * @param estado        estado comercial
+     * @param kilometraje   kilometraje registrado
+     * @param precio        precio de venta
+     */
+    public Vehiculo(String identificador, String marca, String modelo, Integer anio,
+                    String color, EstadoVehiculo estado, Double kilometraje, Double precio) {
+        this.identificador = identificador;
+        this.marca = marca;
+        this.modelo = modelo;
+        this.anio = anio;
+        this.color = color;
+        this.estado = estado;
+        this.kilometraje = kilometraje;
+        this.precio = precio;
+    }
+
+    /**
+     * Devuelve el identificador &#250;nico.
+     *
+     * @return identificador de negocio
+     */
+    public String getIdentificador() {
+        return identificador;
+    }
+
+    /**
+     * Establece el identificador &#250;nico.
+     *
+     * @param identificador identificador de negocio
+     */
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
+    }
+
+    /**
+     * Devuelve la marca.
+     *
+     * @return marca del veh&#237;culo
+     */
+    public String getMarca() {
+        return marca;
+    }
+
+    /**
+     * Establece la marca.
+     *
+     * @param marca marca del veh&#237;culo
+     */
+    public void setMarca(String marca) {
+        this.marca = marca;
+    }
+
+    /**
+     * Devuelve el modelo.
+     *
+     * @return modelo del veh&#237;culo
+     */
+    public String getModelo() {
+        return modelo;
+    }
+
+    /**
+     * Establece el modelo.
+     *
+     * @param modelo modelo del veh&#237;culo
+     */
+    public void setModelo(String modelo) {
+        this.modelo = modelo;
+    }
+
+    /**
+     * Devuelve el a&#241;o de fabricaci&#243;n.
+     *
+     * @return a&#241;o de fabricaci&#243;n
+     */
+    public Integer getAnio() {
+        return anio;
+    }
+
+    /**
+     * Establece el a&#241;o de fabricaci&#243;n.
+     *
+     * @param anio a&#241;o de fabricaci&#243;n
+     */
+    public void setAnio(Integer anio) {
+        this.anio = anio;
+    }
+
+    /**
+     * Devuelve el color.
+     *
+     * @return color del veh&#237;culo
+     */
+    public String getColor() {
+        return color;
+    }
+
+    /**
+     * Establece el color.
+     *
+     * @param color color del veh&#237;culo
+     */
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    /**
+     * Devuelve el estado comercial.
+     *
+     * @return estado del veh&#237;culo
+     */
+    public EstadoVehiculo getEstado() {
+        return estado;
+    }
+
+    /**
+     * Establece el estado comercial.
+     *
+     * @param estado estado del veh&#237;culo
+     */
+    public void setEstado(EstadoVehiculo estado) {
+        this.estado = estado;
+    }
+
+    /**
+     * Devuelve el kilometraje.
+     *
+     * @return kilometraje registrado
+     */
+    public Double getKilometraje() {
+        return kilometraje;
+    }
+
+    /**
+     * Establece el kilometraje.
+     *
+     * @param kilometraje kilometraje registrado
+     */
+    public void setKilometraje(Double kilometraje) {
+        this.kilometraje = kilometraje;
+    }
+
+    /**
+     * Devuelve el precio.
+     *
+     * @return precio de venta
+     */
+    public Double getPrecio() {
+        return precio;
+    }
+
+    /**
+     * Establece el precio.
+     *
+     * @param precio precio de venta
+     */
+    public void setPrecio(Double precio) {
+        this.precio = precio;
+    }
+
+    /**
+     * Devuelve el tipo concreto del veh&#237;culo.
+     *
+     * @return tipo del veh&#237;culo
+     */
+    public abstract TipoVehiculo obtenerTipo();
+
+    /**
+     * Devuelve una ficha t&#233;cnica detallada con los atributos espec&#237;ficos del tipo.
+     *
+     * @return ficha t&#233;cnica legible
+     */
+    public abstract String obtenerFichaTecnicaDetallada();
+
+    /**
+     * Valida las reglas comunes y delega las espec&#237;ficas a la subclase.
+     *
+     * @throws DatoInvalidoException si alg&#250;n dato no cumple las reglas de dominio
+     */
+    public void validar() throws DatoInvalidoException {
+        validarDatosComunes();
+        validarReglasEspecificas();
+    }
+
+    /**
+     * Valida los atributos comunes, incluida la coherencia estado/kilometraje.
+     *
+     * @throws DatoInvalidoException si falta un dato obligatorio o est&#225; fuera de rango
+     */
+    private void validarDatosComunes() throws DatoInvalidoException {
+        if (identificador == null || identificador.isBlank()) {
+            throw new DatoInvalidoException(&quot;El identificador es obligatorio.&quot;);
+        }
+        if (marca == null || marca.isBlank()) {
+            throw new DatoInvalidoException(&quot;La marca es obligatoria.&quot;);
+        }
+        if (modelo == null || modelo.isBlank()) {
+            throw new DatoInvalidoException(&quot;El modelo es obligatorio.&quot;);
+        }
+        if (color == null || color.isBlank()) {
+            throw new DatoInvalidoException(&quot;El color es obligatorio.&quot;);
+        }
+        if (anio == null || anio &lt; ANIO_MINIMO || anio &gt; ANIO_MAXIMO) {
+            throw new DatoInvalidoException(&quot;El a&#241;o debe estar entre &quot; + ANIO_MINIMO + &quot; y &quot; + ANIO_MAXIMO + &quot;.&quot;);
+        }
+        if (precio == null || precio &lt;= 0) {
+            throw new DatoInvalidoException(&quot;El precio debe ser mayor que cero.&quot;);
+        }
+        if (estado == null) {
+            throw new DatoInvalidoException(&quot;El estado es obligatorio.&quot;);
+        }
+        if (kilometraje == null || kilometraje &lt; 0) {
+            throw new DatoInvalidoException(&quot;El kilometraje no puede ser negativo ni nulo.&quot;);
+        }
+        if (estado == EstadoVehiculo.NUEVO &amp;&amp; kilometraje != 0) {
+            throw new KilometrajeInconsistenteException(
+                    &quot;Un veh&#237;culo NUEVO debe tener 0 km; se informaron &quot; + kilometraje + &quot; km.&quot;);
+        }
+        if (estado == EstadoVehiculo.USADO &amp;&amp; kilometraje &lt;= 0) {
+            throw new KilometrajeInconsistenteException(
+                    &quot;Un veh&#237;culo USADO debe tener m&#225;s de 0 km; se informaron &quot; + kilometraje + &quot; km.&quot;);
+        }
+    }
+
+    /**
+     * Valida los atributos propios de cada tipo de veh&#237;culo.
+     *
+     * @throws DatoInvalidoException si alg&#250;n atributo espec&#237;fico es inv&#225;lido
+     */
+    protected abstract void validarReglasEspecificas() throws DatoInvalidoException;
+
+    /**
+     * Redondea un importe a dos decimales.
+     *
+     * @param valor importe a redondear
+     * @return importe redondeado
+     */
+    protected static Double redondear(Double valor) {
+        return Math.round(valor * 100.0) / 100.0;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * &lt;p&gt;El precio final de venta es el precio comercial. Las subclases pueden
+     * enriquecerlo con ajustes propios mediante polimorfismo.&lt;/p&gt;
+     */
+    @Override
+    public Double calcularPrecioFinalVenta() {
+        return redondear(precio);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Double aplicarDescuento(Double porcentaje) {
+        if (porcentaje == null || porcentaje &lt; 0 || porcentaje &gt; 100) {
+            throw new IllegalArgumentException(&quot;El porcentaje de descuento debe estar entre 0 y 100.&quot;);
+        }
+        return redondear(calcularPrecioFinalVenta() * (1 - porcentaje / 100.0));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Double calcularValorTasado() {
+        return redondear(precio * FACTOR_TASACION);
+    }
+
+    /**
+     * Compara veh&#237;culos por su identificador &#250;nico de negocio.
+     *
+     * @param objeto objeto a comparar
+     * @return {@code true} si ambos son veh&#237;culos con el mismo identificador
+     */
+    @Override
+    public boolean equals(Object objeto) {
+        if (this == objeto) {
+            return true;
+        }
+        if (!(objeto instanceof Vehiculo)) {
+            return false;
+        }
+        Vehiculo otro = (Vehiculo) objeto;
+        return Objects.equals(identificador, otro.identificador);
+    }
+
+    /**
+     * Genera el c&#243;digo de hash a partir del identificador &#250;nico.
+     *
+     * @return c&#243;digo de hash
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(identificador);
+    }
+
+    /**
+     * Devuelve una representaci&#243;n ordenada de los atributos comunes.
+     *
+     * @return representaci&#243;n textual del veh&#237;culo
+     */
+    @Override
+    public String toString() {
+        return &quot;Vehiculo{identificador=&#39;&quot; + identificador + &#39;\&#39;&#39;
+                + &quot;, marca=&#39;&quot; + marca + &#39;\&#39;&#39;
+                + &quot;, modelo=&#39;&quot; + modelo + &#39;\&#39;&#39;
+                + &quot;, anio=&quot; + anio
+                + &quot;, color=&#39;&quot; + color + &#39;\&#39;&#39;
+                + &quot;, estado=&quot; + estado
+                + &quot;, kilometraje=&quot; + kilometraje
+                + &quot;, precio=&quot; + precio + &#39;}&#39;;
+    }
+}
+</code></pre></details>
+<details><summary>modelo/Vendible.java</summary><pre><code>package modelo;
+
+/**
+ * Interfaz de comportamiento para veh&#237;culos que pueden venderse.
+ *
+ * &lt;p&gt;&lt;b&gt;Decisi&#243;n de dise&#241;o:&lt;/b&gt; el descuento &lt;b&gt;no modifica&lt;/b&gt; el precio del
+ * veh&#237;culo; devuelve el precio resultante para permitir simulaciones sin
+ * alterar el stock.&lt;/p&gt;
+ */
+public interface Vendible {
+
+    /**
+     * Calcula el precio final de venta del veh&#237;culo.
+     *
+     * @return precio final de venta, mayor que cero
+     */
+    Double calcularPrecioFinalVenta();
+
+    /**
+     * Simula un descuento sobre el precio de venta.
+     *
+     * @param porcentaje porcentaje de descuento entre 0 y 100
+     * @return precio luego de aplicar el descuento
+     */
+    Double aplicarDescuento(Double porcentaje);
+}
+</code></pre></details>
+<details><summary>repositorio/CsvVehiculoCodec.java</summary><pre><code>package repositorio;
+
+import excepciones.DatoInvalidoException;
+import modelo.Automovil;
+import modelo.Camioneta;
+import modelo.EstadoVehiculo;
+import modelo.EstiloMotocicleta;
+import modelo.Motocicleta;
+import modelo.TipoCabina;
+import modelo.TipoCarroceria;
+import modelo.TipoTraccion;
+import modelo.TipoVehiculo;
+import modelo.Vehiculo;
+import util.Validador;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.StringJoiner;
+
+/**
+ * Codificador y decodificador de veh&#237;culos en formato CSV delimitado por &#39;|&#39;.
+ *
+ * &lt;p&gt;&lt;b&gt;Decisi&#243;n de dise&#241;o:&lt;/b&gt; los campos de texto se codifican en Base64 URL
+ * para que el delimitador, los saltos de l&#237;nea y los acentos nunca corrompan
+ * un registro. El primer campo indica el tipo concreto, lo que permite
+ * reconstruir polim&#243;rficamente la subclase correcta al leer el archivo.&lt;/p&gt;
+ */
+public final class CsvVehiculoCodec {
+
+    /** Delimitador de campos. */
+    private static final String SEPARADOR = &quot;\\|&quot;;
+
+    /** Delimitador usado al escribir. */
+    private static final String SEPARADOR_SALIDA = &quot;|&quot;;
+
+    /** Cantidad de campos comunes antes de los atributos espec&#237;ficos. */
+    private static final int CAMPOS_COMUNES = 9;
+
+    /** Constructor privado de clase utilitaria. */
+    private CsvVehiculoCodec() {
+    }
+
+    /**
+     * Serializa un veh&#237;culo en una l&#237;nea CSV.
+     *
+     * @param vehiculo veh&#237;culo a serializar
+     * @return l&#237;nea CSV con el tipo y todos sus atributos
+     */
+    public static String serialize(Vehiculo vehiculo) {
+        StringJoiner fila = new StringJoiner(SEPARADOR_SALIDA);
+        fila.add(vehiculo.obtenerTipo().name());
+        fila.add(codificar(vehiculo.getIdentificador()));
+        fila.add(codificar(vehiculo.getMarca()));
+        fila.add(codificar(vehiculo.getModelo()));
+        fila.add(String.valueOf(vehiculo.getAnio()));
+        fila.add(codificar(vehiculo.getColor()));
+        fila.add(vehiculo.getEstado().name());
+        fila.add(String.valueOf(vehiculo.getKilometraje()));
+        fila.add(String.valueOf(vehiculo.getPrecio()));
+
+        if (vehiculo instanceof Automovil) {
+            Automovil auto = (Automovil) vehiculo;
+            fila.add(auto.getCarroceria().name());
+            fila.add(String.valueOf(auto.getPuertas()));
+        } else if (vehiculo instanceof Camioneta) {
+            Camioneta camioneta = (Camioneta) vehiculo;
+            fila.add(camioneta.getCabina().name());
+            fila.add(camioneta.getTraccion().name());
+            fila.add(String.valueOf(camioneta.getCapacidadCarga()));
+        } else if (vehiculo instanceof Motocicleta) {
+            Motocicleta moto = (Motocicleta) vehiculo;
+            fila.add(moto.getEstilo().name());
+            fila.add(String.valueOf(moto.getCilindrada()));
+        }
+        return fila.toString();
+    }
+
+    /**
+     * Reconstruye un veh&#237;culo a partir de una l&#237;nea CSV y valida su contenido.
+     *
+     * @param linea l&#237;nea CSV le&#237;da del archivo
+     * @return veh&#237;culo reconstruido
+     * @throws DatoInvalidoException si la l&#237;nea est&#225; incompleta o es corrupta
+     */
+    public static Vehiculo deserialize(String linea) throws DatoInvalidoException {
+        String[] campos = linea.split(SEPARADOR, -1);
+        if (campos.length &lt; CAMPOS_COMUNES) {
+            throw new DatoInvalidoException(&quot;Registro CSV incompleto: &quot; + campos.length + &quot; campos.&quot;);
+        }
+
+        TipoVehiculo tipo = Validador.parsearEnum(campos[0], TipoVehiculo.class);
+        String identificador = decodificar(campos[1]);
+        String marca = decodificar(campos[2]);
+        String modelo = decodificar(campos[3]);
+        Integer anio = Validador.parsearEntero(campos[4], &quot;anio&quot;);
+        String color = decodificar(campos[5]);
+        EstadoVehiculo estado = Validador.parsearEnum(campos[6], EstadoVehiculo.class);
+        Double kilometraje = Validador.parsearDouble(campos[7], &quot;kilometraje&quot;);
+        Double precio = Validador.parsearDouble(campos[8], &quot;precio&quot;);
+
+        Vehiculo vehiculo = switch (tipo) {
+            case AUTOMOVIL -&gt; {
+                verificarCantidad(campos, 11, &quot;autom&#243;vil&quot;);
+                yield new Automovil(identificador, marca, modelo, anio, color, estado, kilometraje,
+                        precio, Validador.parsearEnum(campos[9], TipoCarroceria.class),
+                        Validador.parsearEntero(campos[10], &quot;puertas&quot;));
+            }
+            case CAMIONETA -&gt; {
+                verificarCantidad(campos, 12, &quot;camioneta&quot;);
+                yield new Camioneta(identificador, marca, modelo, anio, color, estado, kilometraje,
+                        precio, Validador.parsearEnum(campos[9], TipoCabina.class),
+                        Validador.parsearEnum(campos[10], TipoTraccion.class),
+                        Validador.parsearDouble(campos[11], &quot;capacidadCarga&quot;));
+            }
+            case MOTOCICLETA -&gt; {
+                verificarCantidad(campos, 11, &quot;motocicleta&quot;);
+                yield new Motocicleta(identificador, marca, modelo, anio, color, estado, kilometraje,
+                        precio, Validador.parsearEnum(campos[9], EstiloMotocicleta.class),
+                        Validador.parsearEntero(campos[10], &quot;cilindrada&quot;));
+            }
+        };
+
+        vehiculo.validar();
+        return vehiculo;
+    }
+
+    /**
+     * Comprueba la cantidad exacta de campos seg&#250;n el tipo de veh&#237;culo.
+     *
+     * @param campos     arreglo de campos le&#237;dos
+     * @param esperados  cantidad esperada
+     * @param nombreTipo nombre del tipo para el mensaje
+     * @throws DatoInvalidoException si la cantidad no coincide
+     */
+    private static void verificarCantidad(String[] campos, int esperados, String nombreTipo)
+            throws DatoInvalidoException {
+        if (campos.length != esperados) {
+            throw new DatoInvalidoException(&quot;Registro de &quot; + nombreTipo + &quot; con &quot;
+                    + campos.length + &quot; campos; se esperaban &quot; + esperados + &quot;.&quot;);
+        }
+    }
+
+    /**
+     * Codifica un texto a Base64 URL.
+     *
+     * @param texto texto original
+     * @return texto codificado
+     */
+    private static String codificar(String texto) {
+        return Base64.getUrlEncoder().encodeToString(texto.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Decodifica un campo Base64 URL.
+     *
+     * @param campo campo codificado
+     * @return texto original
+     * @throws DatoInvalidoException si el campo no es Base64 v&#225;lido
+     */
+    private static String decodificar(String campo) throws DatoInvalidoException {
+        try {
+            return new String(Base64.getUrlDecoder().decode(campo), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException causa) {
+            throw new DatoInvalidoException(&quot;Campo de texto corrupto en el archivo CSV.&quot;, causa);
+        }
+    }
+}
+</code></pre></details>
+<details><summary>repositorio/IRepositorio.java</summary><pre><code>package repositorio;
+
+import excepciones.VehiculoDuplicadoException;
+import excepciones.VehiculoNoEncontradoException;
+
+import java.util.List;
+
+/**
+ * Contrato gen&#233;rico de repositorio con operaciones CRUD b&#225;sicas.
+ *
+ * @param &lt;T&gt;  tipo de entidad gestionada
+ * @param &lt;ID&gt; tipo del identificador de la entidad
+ */
+public interface IRepositorio&lt;T, ID&gt; {
+
+    /**
+     * Agrega una entidad al repositorio.
+     *
+     * @param entidad entidad a agregar
+     * @throws VehiculoDuplicadoException si ya existe una entidad con el mismo id
+     */
+    void agregar(T entidad) throws VehiculoDuplicadoException;
+
+    /**
+     * Busca una entidad por su identificador.
+     *
+     * @param id identificador buscado
+     * @return entidad encontrada
+     * @throws VehiculoNoEncontradoException si no existe
+     */
+    T buscarPorId(ID id) throws VehiculoNoEncontradoException;
+
+    /**
+     * Devuelve todas las entidades almacenadas.
+     *
+     * @return lista con todas las entidades
+     */
+    List&lt;T&gt; listarTodos();
+
+    /**
+     * Reemplaza una entidad existente.
+     *
+     * @param entidad entidad con los datos actualizados
+     * @throws VehiculoNoEncontradoException si el identificador no existe
+     */
+    void actualizar(T entidad) throws VehiculoNoEncontradoException;
+
+    /**
+     * Elimina una entidad por su identificador.
+     *
+     * @param id identificador de la entidad a eliminar
+     * @throws VehiculoNoEncontradoException si no existe
+     */
+    void eliminar(ID id) throws VehiculoNoEncontradoException;
+}
+</code></pre></details>
+<details><summary>repositorio/IRepositorioPersistible.java</summary><pre><code>package repositorio;
+
+import excepciones.DatoInvalidoException;
+
+import java.io.IOException;
+
+/**
+ * Extensi&#243;n del contrato de repositorio para implementaciones con persistencia.
+ *
+ * @param &lt;T&gt;  tipo de entidad gestionada
+ * @param &lt;ID&gt; tipo del identificador de la entidad
+ */
+public interface IRepositorioPersistible&lt;T, ID&gt; extends IRepositorio&lt;T, ID&gt; {
+
+    /**
+     * Carga las entidades desde el soporte de persistencia.
+     *
+     * @throws IOException             si falla la lectura del archivo
+     * @throws DatoInvalidoException   si el archivo contiene un registro corrupto
+     */
+    void cargar() throws IOException, DatoInvalidoException;
+
+    /**
+     * Guarda todas las entidades en el soporte de persistencia.
+     *
+     * @throws IOException si falla la escritura del archivo
+     */
+    void guardar() throws IOException;
+}
+</code></pre></details>
+<details><summary>repositorio/RepositorioGenerico.java</summary><pre><code>package repositorio;
+
+import excepciones.VehiculoDuplicadoException;
+import excepciones.VehiculoNoEncontradoException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+/**
+ * Implementaci&#243;n gen&#233;rica en memoria del contrato {@link IRepositorio}.
+ *
+ * &lt;p&gt;&lt;b&gt;Decisi&#243;n de dise&#241;o:&lt;/b&gt; se usa un {@link LinkedHashMap} para indexar
+ * por identificador (b&#250;squedas O(1)) y conservar el orden de inserci&#243;n en el
+ * listado. La extracci&#243;n del id se inyecta con una funci&#243;n
+ * {@link Function}, de modo que esta clase sea reutilizable para cualquier entidad.&lt;/p&gt;
+ *
+ * @param &lt;T&gt;  tipo de entidad gestionada
+ * @param &lt;ID&gt; tipo del identificador
+ */
+public class RepositorioGenerico&lt;T, ID&gt; implements IRepositorio&lt;T, ID&gt; {
+
+    /** Mapa indexado por identificador. */
+    protected final Map&lt;ID, T&gt; entidades = new LinkedHashMap&lt;&gt;();
+
+    /** Funci&#243;n que extrae el identificador de una entidad. */
+    protected final Function&lt;T, ID&gt; extractorId;
+
+    /**
+     * Crea el repositorio indicando c&#243;mo obtener el identificador.
+     *
+     * @param extractorId funci&#243;n que extrae el id de la entidad
+     */
+    public RepositorioGenerico(Function&lt;T, ID&gt; extractorId) {
+        this.extractorId = extractorId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void agregar(T entidad) throws VehiculoDuplicadoException {
+        ID id = extractorId.apply(entidad);
+        if (entidades.containsKey(id)) {
+            throw new VehiculoDuplicadoException(String.valueOf(id));
+        }
+        entidades.put(id, entidad);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public T buscarPorId(ID id) throws VehiculoNoEncontradoException {
+        T entidad = entidades.get(id);
+        if (entidad == null) {
+            throw new VehiculoNoEncontradoException(String.valueOf(id));
+        }
+        return entidad;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List&lt;T&gt; listarTodos() {
+        return new ArrayList&lt;&gt;(entidades.values());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void actualizar(T entidad) throws VehiculoNoEncontradoException {
+        ID id = extractorId.apply(entidad);
+        if (!entidades.containsKey(id)) {
+            throw new VehiculoNoEncontradoException(String.valueOf(id));
+        }
+        entidades.put(id, entidad);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void eliminar(ID id) throws VehiculoNoEncontradoException {
+        if (entidades.remove(id) == null) {
+            throw new VehiculoNoEncontradoException(String.valueOf(id));
+        }
+    }
+
+    /**
+     * Reemplaza todo el contenido del repositorio, usado al cargar desde disco.
+     *
+     * @param nuevasEntidades colecci&#243;n de entidades a cargar
+     */
+    protected void reemplazarTodo(Collection&lt;T&gt; nuevasEntidades) {
+        entidades.clear();
+        for (T entidad : nuevasEntidades) {
+            entidades.put(extractorId.apply(entidad), entidad);
+        }
+    }
+}
+</code></pre></details>
+<details><summary>repositorio/RepositorioVehiculos.java</summary><pre><code>package repositorio;
+
+import excepciones.DatoInvalidoException;
+import modelo.Vehiculo;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Repositorio concreto de veh&#237;culos con persistencia en un archivo CSV.
+ *
+ * &lt;p&gt;El archivo se carga autom&#225;ticamente al iniciar la aplicaci&#243;n y se
+ * reescribe por completo despu&#233;s de cada alta, modificaci&#243;n o baja, garantizando
+ * que el stock perdure entre ejecuciones.&lt;/p&gt;
+ */
+public class RepositorioVehiculos extends RepositorioGenerico&lt;Vehiculo, String&gt;
+        implements IRepositorioPersistible&lt;Vehiculo, String&gt; {
+
+    /** Ruta por defecto del archivo de stock. */
+    private static final Path ARCHIVO_POR_DEFECTO = Paths.get(&quot;stock.csv&quot;);
+
+    /** Ruta del archivo de persistencia. */
+    private final Path archivo;
+
+    /**
+     * Crea el repositorio usando {@code stock.csv} en el directorio actual.
+     */
+    public RepositorioVehiculos() {
+        this(ARCHIVO_POR_DEFECTO);
+    }
+
+    /**
+     * Crea el repositorio con una ruta de archivo configurable.
+     *
+     * @param archivo ruta del archivo CSV
+     */
+    public RepositorioVehiculos(Path archivo) {
+        super(Vehiculo::getIdentificador);
+        this.archivo = archivo;
+    }
+
+    /**
+     * Devuelve la ruta del archivo de persistencia.
+     *
+     * @return ruta configurada
+     */
+    public Path getArchivo() {
+        return archivo;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void cargar() throws IOException, DatoInvalidoException {
+        if (!Files.exists(archivo)) {
+            return;
+        }
+        List&lt;Vehiculo&gt; cargados = new ArrayList&lt;&gt;();
+        int numeroLinea = 0;
+        try (BufferedReader lector = Files.newBufferedReader(archivo, StandardCharsets.UTF_8)) {
+            String linea;
+            while ((linea = lector.readLine()) != null) {
+                numeroLinea++;
+                if (linea.isBlank()) {
+                    continue;
+                }
+                try {
+                    cargados.add(CsvVehiculoCodec.deserialize(linea));
+                } catch (DatoInvalidoException | NumberFormatException error) {
+                    throw new DatoInvalidoException(&quot;Error en la l&#237;nea &quot; + numeroLinea
+                            + &quot; de &#39;&quot; + archivo + &quot;&#39;: &quot; + error.getMessage(), error);
+                }
+            }
+        }
+        reemplazarTodo(cargados);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void guardar() throws IOException {
+        try (BufferedWriter escritor = Files.newBufferedWriter(archivo, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE)) {
+            for (Vehiculo vehiculo : listarTodos()) {
+                escritor.write(CsvVehiculoCodec.serialize(vehiculo));
+                escritor.newLine();
+            }
+        }
+    }
+}
+</code></pre></details>
+<details><summary>servicio/ServicioVehiculos.java</summary><pre><code>package servicio;
+
+import excepciones.DatoInvalidoException;
+import excepciones.VehiculoDuplicadoException;
+import excepciones.VehiculoNoEncontradoException;
+import modelo.EstadoVehiculo;
+import modelo.SimulacionVenta;
+import modelo.TipoVehiculo;
+import modelo.Vehiculo;
+import repositorio.IRepositorioPersistible;
+import util.Validador;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Servicio de negocio del stock de la concesionaria.
+ *
+ * &lt;p&gt;Coordina la consola con el repositorio: aplica validaciones de dominio,
+ * ejecuta las operaciones CRUD y guarda autom&#225;ticamente los cambios. La vista
+ * nunca accede al repositorio ni a archivos directamente.&lt;/p&gt;
+ */
+public class ServicioVehiculos {
+
+    /** Repositorio persistible inyectado. */
+    private final IRepositorioPersistible&lt;Vehiculo, String&gt; repositorio;
+
+    /**
+     * Crea el servicio con su repositorio.
+     *
+     * @param repositorio repositorio persistible de veh&#237;culos
+     */
+    public ServicioVehiculos(IRepositorioPersistible&lt;Vehiculo, String&gt; repositorio) {
+        this.repositorio = repositorio;
+    }
+
+    /**
+     * Carga el stock desde el soporte de persistencia al iniciar la aplicaci&#243;n.
+     *
+     * @throws IOException           si no se puede leer el archivo
+     * @throws DatoInvalidoException si el archivo contiene datos corruptos
+     */
+    public void inicializar() throws IOException, DatoInvalidoException {
+        repositorio.cargar();
+    }
+
+    /**
+     * Da de alta un veh&#237;culo y persiste el cambio.
+     *
+     * @param vehiculo veh&#237;culo a agregar
+     * @throws DatoInvalidoException       si el veh&#237;culo no supera la validaci&#243;n
+     * @throws VehiculoDuplicadoException  si el identificador ya existe
+     * @throws IOException                 si falla la escritura del archivo
+     */
+    public void darDeAlta(Vehiculo vehiculo)
+            throws DatoInvalidoException, VehiculoDuplicadoException, IOException {
+        vehiculo.validar();
+        repositorio.agregar(vehiculo);
+        persistir();
+    }
+
+    /**
+     * Busca un veh&#237;culo por identificador.
+     *
+     * @param identificador identificador buscado
+     * @return veh&#237;culo encontrado
+     * @throws DatoInvalidoException         si el identificador est&#225; vac&#237;o
+     * @throws VehiculoNoEncontradoException si no existe
+     */
+    public Vehiculo buscarPorId(String identificador)
+            throws DatoInvalidoException, VehiculoNoEncontradoException {
+        return repositorio.buscarPorId(Validador.validarTextoNoVacio(identificador, &quot;identificador&quot;));
+    }
+
+    /**
+     * Devuelve todo el stock.
+     *
+     * @return lista con todos los veh&#237;culos
+     */
+    public List&lt;Vehiculo&gt; listarTodos() {
+        return repositorio.listarTodos();
+    }
+
+    /**
+     * Filtra el stock por tipo de veh&#237;culo.
+     *
+     * @param tipo tipo buscado
+     * @return lista de veh&#237;culos del tipo indicado
+     */
+    public List&lt;Vehiculo&gt; listarPorTipo(TipoVehiculo tipo) {
+        return listarTodos().stream()
+                .filter(vehiculo -&gt; vehiculo.obtenerTipo() == tipo)
+                .toList();
+    }
+
+    /**
+     * Filtra el stock por estado comercial.
+     *
+     * @param estado estado buscado
+     * @return lista de veh&#237;culos con ese estado
+     */
+    public List&lt;Vehiculo&gt; listarPorEstado(EstadoVehiculo estado) {
+        return listarTodos().stream()
+                .filter(vehiculo -&gt; vehiculo.getEstado() == estado)
+                .toList();
+    }
+
+    /**
+     * Filtra el stock por marca (comparaci&#243;n sin distinci&#243;n de may&#250;sculas).
+     *
+     * @param marca marca buscada
+     * @return lista de veh&#237;culos de esa marca
+     * @throws DatoInvalidoException si la marca est&#225; vac&#237;a
+     */
+    public List&lt;Vehiculo&gt; listarPorMarca(String marca) throws DatoInvalidoException {
+        String marcaValidada = Validador.validarTextoNoVacio(marca, &quot;marca&quot;).toLowerCase();
+        return listarTodos().stream()
+                .filter(vehiculo -&gt; vehiculo.getMarca().toLowerCase().contains(marcaValidada))
+                .toList();
+    }
+
+    /**
+     * Filtra el stock aplicando varios criterios a la vez.
+     *
+     * @param tipo   tipo buscado, o {@code null} para no filtrar
+     * @param estado estado buscado, o {@code null} para no filtrar
+     * @param marca  marca o parte de ella, o {@code null}/{@code blank} para no filtrar
+     * @return lista de veh&#237;culos que cumplen todos los criterios
+     * @throws DatoInvalidoException si la marca informada est&#225; vac&#237;a
+     */
+    public List&lt;Vehiculo&gt; listarConFiltros(TipoVehiculo tipo, EstadoVehiculo estado, String marca)
+            throws DatoInvalidoException {
+        String marcaBuscada = marca == null || marca.isBlank()
+                ? null
+                : Validador.validarTextoNoVacio(marca, &quot;marca&quot;).toLowerCase();
+        return listarTodos().stream()
+                .filter(vehiculo -&gt; tipo == null || vehiculo.obtenerTipo() == tipo)
+                .filter(vehiculo -&gt; estado == null || vehiculo.getEstado() == estado)
+                .filter(vehiculo -&gt; marcaBuscada == null
+                        || vehiculo.getMarca().toLowerCase().contains(marcaBuscada))
+                .toList();
+    }
+
+    /**
+     * Modifica el precio de un veh&#237;culo y persiste el cambio.
+     *
+     * @param identificador identificador del veh&#237;culo
+     * @param nuevoPrecio   nuevo precio, mayor que cero
+     * @throws DatoInvalidoException         si el precio es inv&#225;lido
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la escritura
+     */
+    public void cambiarPrecio(String identificador, Double nuevoPrecio)
+            throws DatoInvalidoException, VehiculoNoEncontradoException, IOException {
+        Validador.validarPrecio(nuevoPrecio);
+        Vehiculo vehiculo = buscarPorId(identificador);
+        vehiculo.setPrecio(nuevoPrecio);
+        repositorio.actualizar(vehiculo);
+        persistir();
+    }
+
+    /**
+     * Modifica el color de un veh&#237;culo y persiste el cambio.
+     *
+     * @param identificador identificador del veh&#237;culo
+     * @param nuevoColor    nuevo color
+     * @throws DatoInvalidoException         si el color est&#225; vac&#237;o
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la escritura
+     */
+    public void cambiarColor(String identificador, String nuevoColor)
+            throws DatoInvalidoException, VehiculoNoEncontradoException, IOException {
+        String colorValidado = Validador.validarTextoNoVacio(nuevoColor, &quot;color&quot;);
+        Vehiculo vehiculo = buscarPorId(identificador);
+        vehiculo.setColor(colorValidado);
+        repositorio.actualizar(vehiculo);
+        persistir();
+    }
+
+    /**
+     * Da de baja un veh&#237;culo y persiste el cambio.
+     *
+     * @param identificador identificador del veh&#237;culo a eliminar
+     * @throws DatoInvalidoException         si el identificador est&#225; vac&#237;o
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la escritura
+     */
+    public void darDeBaja(String identificador)
+            throws DatoInvalidoException, VehiculoNoEncontradoException, IOException {
+        repositorio.eliminar(Validador.validarTextoNoVacio(identificador, &quot;identificador&quot;));
+        persistir();
+    }
+
+    /**
+     * Simula la venta de un veh&#237;culo usando polimorfismo e interfaces.
+     *
+     * @param identificador     identificador del veh&#237;culo
+     * @param porcentajeDescuento descuento entre 0 y 100
+     * @return simulaci&#243;n con todos los importes calculados
+     * @throws DatoInvalidoException         si el descuento o el id son inv&#225;lidos
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     */
+    public SimulacionVenta simularVenta(String identificador, Double porcentajeDescuento)
+            throws DatoInvalidoException, VehiculoNoEncontradoException {
+        Double descuento = Validador.validarPorcentaje(porcentajeDescuento);
+        Vehiculo vehiculo = buscarPorId(identificador);
+        Double precioFinal = vehiculo.aplicarDescuento(descuento);
+        Double impuesto = vehiculo.calcularImpuestoPatente();
+        Double tasado = vehiculo.calcularValorTasado();
+        Double total = Math.round((precioFinal + impuesto) * 100.0) / 100.0;
+        return new SimulacionVenta(vehiculo, descuento, precioFinal, impuesto, tasado, total);
+    }
+
+    /**
+     * Fuerza la escritura del stock en disco.
+     *
+     * @throws IOException si falla la escritura
+     */
+    public void guardar() throws IOException {
+        persistir();
+    }
+
+    /**
+     * Persiste el estado actual del repositorio.
+     *
+     * @throws IOException si falla la escritura
+     */
+    private void persistir() throws IOException {
+        repositorio.guardar();
+    }
+}
+</code></pre></details>
+<details><summary>util/LecturaConsola.java</summary><pre><code>package util;
+
+import excepciones.DatoInvalidoException;
+
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+/**
+ * Utilidad de entrada de datos por consola.
+ *
+ * &lt;p&gt;&lt;b&gt;Remarks:&lt;/b&gt; todas las lecturas se hacen con {@link Scanner#nextLine()}
+ * y conversi&#243;n posterior, de modo que no quedan restos de salto de l&#237;nea en el
+ * buffer (el cl&#225;sico error al mezclar {@code nextInt()} con {@code nextLine()}).
+ * Los bucles repiten la pregunta hasta obtener un dato v&#225;lido y nunca abortan
+ * el programa ante un {@link NumberFormatException} o
+ * {@link InputMismatchException}.&lt;/p&gt;
+ */
+public class LecturaConsola {
+
+    /** Lector asociado a la entrada est&#225;ndar. */
+    private final Scanner scanner;
+
+    /**
+     * Crea el lector usando {@link System#in}.
+     */
+    public LecturaConsola() {
+        this(new Scanner(System.in));
+    }
+
+    /**
+     * Crea el lector con un {@link Scanner} inyectado (&#250;til para pruebas).
+     *
+     * @param scanner lector a utilizar
+     */
+    public LecturaConsola(Scanner scanner) {
+        this.scanner = scanner;
+    }
+
+    /**
+     * Solicita un texto no vac&#237;o hasta que el usuario lo ingrese correctamente.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @return texto validado y recortado
+     */
+    public String leerTexto(String mensaje) {
+        while (true) {
+            System.out.print(mensaje);
+            String entrada = scanner.nextLine();
+            try {
+                return Validador.validarTextoNoVacio(entrada, mensaje);
+            } catch (DatoInvalidoException error) {
+                System.out.println(&quot;  ! &quot; + error.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Solicita un n&#250;mero entero dentro de un rango inclusivo.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @param minimo  valor m&#237;nimo aceptado
+     * @param maximo  valor m&#225;ximo aceptado
+     * @return entero dentro del rango
+     */
+    public Integer leerEntero(String mensaje, Integer minimo, Integer maximo) {
+        while (true) {
+            System.out.print(mensaje);
+            String entrada = scanner.nextLine();
+            try {
+                Integer valor = Validador.parsearEntero(entrada, mensaje);
+                if (valor &lt; minimo || (maximo != null &amp;&amp; valor &gt; maximo)) {
+                    System.out.println(&quot;  ! Ingrese un valor entre &quot; + minimo
+                            + (maximo == null ? &quot; y superior.&quot; : &quot; y &quot; + maximo + &quot;.&quot;));
+                    continue;
+                }
+                return valor;
+            } catch (DatoInvalidoException | InputMismatchException error) {
+                System.out.println(&quot;  ! Debe ingresar un n&#250;mero entero v&#225;lido.&quot;);
+            }
+        }
+    }
+
+    /**
+     * Solicita un n&#250;mero entero sin restricci&#243;n de rango.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @return entero le&#237;do
+     */
+    public Integer leerEntero(String mensaje) {
+        return leerEntero(mensaje, Integer.MIN_VALUE, null);
+    }
+
+    /**
+     * Solicita un n&#250;mero decimal dentro de un rango inclusivo.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @param minimo  valor m&#237;nimo aceptado
+     * @param maximo  valor m&#225;ximo aceptado, o {@code null} si no hay l&#237;mite superior
+     * @return decimal dentro del rango
+     */
+    public Double leerDouble(String mensaje, Double minimo, Double maximo) {
+        while (true) {
+            System.out.print(mensaje);
+            String entrada = scanner.nextLine();
+            try {
+                Double valor = Validador.parsearDouble(entrada, mensaje);
+                if (valor &lt; minimo || (maximo != null &amp;&amp; valor &gt; maximo)) {
+                    System.out.println(&quot;  ! Ingrese un valor entre &quot; + minimo
+                            + (maximo == null ? &quot; y superior.&quot; : &quot; y &quot; + maximo + &quot;.&quot;));
+                    continue;
+                }
+                return valor;
+            } catch (DatoInvalidoException | InputMismatchException error) {
+                System.out.println(&quot;  ! Debe ingresar un n&#250;mero decimal v&#225;lido (use . o ,).&quot;);
+            }
+        }
+    }
+
+    /**
+     * Muestra los valores de un enum numerados y solicita una opci&#243;n v&#225;lida.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @param tipoEnum clase del enum
+     * @param &lt;E&gt;      tipo del enum
+     * @return constante seleccionada
+     */
+    public &lt;E extends Enum&lt;E&gt;&gt; E leerEnum(String mensaje, Class&lt;E&gt; tipoEnum) {
+        E[] valores = tipoEnum.getEnumConstants();
+        System.out.println(mensaje);
+        for (int i = 0; i &lt; valores.length; i++) {
+            System.out.println(&quot;    &quot; + (i + 1) + &quot;) &quot; + valores[i].name());
+        }
+        Integer opcion = leerEntero(&quot;  Opci&#243;n: &quot;, 1, valores.length);
+        return valores[opcion - 1];
+    }
+
+    /**
+     * Solicita una respuesta s&#237;/no.
+     *
+     * @param mensaje mensaje de petici&#243;n
+     * @return {@code true} para s&#237;, {@code false} para no
+     */
+    public Boolean leerSiNo(String mensaje) {
+        while (true) {
+            String respuesta = leerTexto(mensaje + &quot; (s/n): &quot;).toLowerCase();
+            if (respuesta.equals(&quot;s&quot;) || respuesta.equals(&quot;si&quot;)) {
+                return true;
+            }
+            if (respuesta.equals(&quot;n&quot;) || respuesta.equals(&quot;no&quot;)) {
+                return false;
+            }
+            System.out.println(&quot;  ! Responda &#39;s&#39; o &#39;n&#39;.&quot;);
+        }
+    }
+
+    /**
+     * Descarta lo que quede de la l&#237;nea actual del buffer de entrada.
+     * Se conserva para integraciones que mezclen otros lectores; con este
+     * dise&#241;o no es necesario llamarlo despu&#233;s de cada lectura.
+     */
+    public void limpiarBuffer() {
+        if (scanner.hasNextLine()) {
+            scanner.nextLine();
+        }
+    }
+}
+</code></pre></details>
+<details><summary>util/Validador.java</summary><pre><code>package util;
+
+import excepciones.DatoInvalidoException;
+import modelo.Vehiculo;
+
+/**
+ * Utilidades est&#225;ticas de validaci&#243;n y conversi&#243;n de datos de entrada.
+ *
+ * &lt;p&gt;El servicio y la consola comparten estas reglas para que un mismo dato
+ * se valide siempre de id&#233;ntica manera. Las conversiones usan los
+ * &lt;i&gt;wrappers&lt;/i&gt; {@link Integer} y {@link Double} y nunca tipos primitivos.&lt;/p&gt;
+ */
+public final class Validador {
+
+    /** Constante para evitar instanciaci&#243;n de la clase utilitaria. */
+    private Validador() {
+    }
+
+    /**
+     * Valida que un texto no sea nulo ni est&#233; vac&#237;o.
+     *
+     * @param texto       texto a validar
+     * @param nombreCampo nombre del campo para el mensaje de error
+     * @return texto recortado (sin espacios laterales)
+     * @throws DatoInvalidoException si el texto es nulo o vac&#237;o
+     */
+    public static String validarTextoNoVacio(String texto, String nombreCampo)
+            throws DatoInvalidoException {
+        if (texto == null || texto.isBlank()) {
+            throw new DatoInvalidoException(&quot;El campo &#39;&quot; + nombreCampo + &quot;&#39; no puede estar vac&#237;o.&quot;);
+        }
+        return texto.trim();
+    }
+
+    /**
+     * Convierte un texto a {@link Integer} usando {@link Integer#valueOf(String)}.
+     *
+     * @param texto       texto a convertir
+     * @param nombreCampo nombre del campo para el mensaje de error
+     * @return valor entero parseado
+     * @throws DatoInvalidoException si el texto no es un n&#250;mero entero v&#225;lido
+     */
+    public static Integer parsearEntero(String texto, String nombreCampo)
+            throws DatoInvalidoException {
+        try {
+            return Integer.valueOf(texto.trim());
+        } catch (NumberFormatException causa) {
+            throw new DatoInvalidoException(
+                    &quot;El campo &#39;&quot; + nombreCampo + &quot;&#39; debe ser un n&#250;mero entero.&quot;, causa);
+        }
+    }
+
+    /**
+     * Convierte un texto a {@link Double}, aceptando coma o punto decimal.
+     *
+     * @param texto       texto a convertir
+     * @param nombreCampo nombre del campo para el mensaje de error
+     * @return valor decimal parseado
+     * @throws DatoInvalidoException si el texto no es un n&#250;mero v&#225;lido
+     */
+    public static Double parsearDouble(String texto, String nombreCampo)
+            throws DatoInvalidoException {
+        try {
+            return Double.valueOf(texto.trim().replace(&#39;,&#39;, &#39;.&#39;));
+        } catch (NumberFormatException causa) {
+            throw new DatoInvalidoException(
+                    &quot;El campo &#39;&quot; + nombreCampo + &quot;&#39; debe ser un n&#250;mero decimal.&quot;, causa);
+        }
+    }
+
+    /**
+     * Valida el rango del a&#241;o de fabricaci&#243;n.
+     *
+     * @param anio a&#241;o a validar
+     * @return el a&#241;o validado
+     * @throws DatoInvalidoException si es nulo o est&#225; fuera de rango
+     */
+    public static Integer validarAnio(Integer anio) throws DatoInvalidoException {
+        if (anio == null || anio &lt; Vehiculo.ANIO_MINIMO || anio &gt; Vehiculo.ANIO_MAXIMO) {
+            throw new DatoInvalidoException(&quot;El a&#241;o debe estar entre &quot;
+                    + Vehiculo.ANIO_MINIMO + &quot; y &quot; + Vehiculo.ANIO_MAXIMO + &quot;.&quot;);
+        }
+        return anio;
+    }
+
+    /**
+     * Valida que el precio sea mayor que cero.
+     *
+     * @param precio precio a validar
+     * @return el precio validado
+     * @throws DatoInvalidoException si es nulo o no es positivo
+     */
+    public static Double validarPrecio(Double precio) throws DatoInvalidoException {
+        if (precio == null || precio &lt;= 0) {
+            throw new DatoInvalidoException(&quot;El precio debe ser mayor que cero.&quot;);
+        }
+        return precio;
+    }
+
+    /**
+     * Valida que el kilometraje no sea negativo. La coherencia con el estado
+     * se comprueba en {@link Vehiculo#validar()}.
+     *
+     * @param kilometraje kilometraje a validar
+     * @return el kilometraje validado
+     * @throws DatoInvalidoException si es nulo o negativo
+     */
+    public static Double validarKilometraje(Double kilometraje) throws DatoInvalidoException {
+        if (kilometraje == null || kilometraje &lt; 0) {
+            throw new DatoInvalidoException(&quot;El kilometraje no puede ser negativo ni nulo.&quot;);
+        }
+        return kilometraje;
+    }
+
+    /**
+     * Valida un valor entero positivo usado en atributos espec&#237;ficos.
+     *
+     * @param valor       valor a validar
+     * @param nombreCampo nombre del campo para el mensaje de error
+     * @return el valor validado
+     * @throws DatoInvalidoException si es nulo o no es positivo
+     */
+    public static Integer validarEnteroPositivo(Integer valor, String nombreCampo)
+            throws DatoInvalidoException {
+        if (valor == null || valor &lt;= 0) {
+            throw new DatoInvalidoException(&quot;El campo &#39;&quot; + nombreCampo + &quot;&#39; debe ser mayor que cero.&quot;);
+        }
+        return valor;
+    }
+
+    /**
+     * Valida un porcentaje de descuento.
+     *
+     * @param porcentaje porcentaje a validar
+     * @return el porcentaje validado
+     * @throws DatoInvalidoException si es nulo o est&#225; fuera de [0, 100]
+     */
+    public static Double validarPorcentaje(Double porcentaje) throws DatoInvalidoException {
+        if (porcentaje == null || porcentaje &lt; 0 || porcentaje &gt; 100) {
+            throw new DatoInvalidoException(&quot;El descuento debe estar entre 0 y 100.&quot;);
+        }
+        return porcentaje;
+    }
+
+    /**
+     * Convierte un texto al constante de enum indicado.
+     *
+     * @param texto       nombre de la constante
+     * @param tipoEnum    clase del enum
+     * @param &lt;E&gt;         tipo del enum
+     * @return constante del enum
+     * @throws DatoInvalidoException si el texto no corresponde a una constante
+     */
+    public static &lt;E extends Enum&lt;E&gt;&gt; E parsearEnum(String texto, Class&lt;E&gt; tipoEnum)
+            throws DatoInvalidoException {
+        try {
+            return Enum.valueOf(tipoEnum, texto.trim());
+        } catch (IllegalArgumentException | NullPointerException causa) {
+            throw new DatoInvalidoException(
+                    &quot;Valor &#39;&quot; + texto + &quot;&#39; inv&#225;lido para &quot; + tipoEnum.getSimpleName() + &quot;.&quot;, causa);
+        }
+    }
+}
+</code></pre></details>
+<details><summary>vista/ConsolaApp.java</summary><pre><code>package vista;
+
+import excepciones.DatoInvalidoException;
+import excepciones.VehiculoDuplicadoException;
+import excepciones.VehiculoNoEncontradoException;
+import modelo.Automovil;
+import modelo.Camioneta;
+import modelo.EstadoVehiculo;
+import modelo.EstiloMotocicleta;
+import modelo.Motocicleta;
+import modelo.SimulacionVenta;
+import modelo.TipoCabina;
+import modelo.TipoCarroceria;
+import modelo.TipoTraccion;
+import modelo.TipoVehiculo;
+import modelo.Vehiculo;
+import repositorio.RepositorioVehiculos;
+import servicio.ServicioVehiculos;
+import util.LecturaConsola;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+/**
+ * Aplicaci&#243;n de consola: men&#250;s, lectura de datos y presentaci&#243;n.
+ *
+ * &lt;p&gt;Esta clase delega todas las decisiones de negocio a
+ * {@link ServicioVehiculos}; no valida reglas de dominio por su cuenta y jam&#225;s
+ * accede directamente al archivo de persistencia.&lt;/p&gt;
+ */
+public class ConsolaApp {
+
+    /** Lector de datos con control de errores. */
+    private final LecturaConsola lector = new LecturaConsola();
+
+    /** Repositorio concrete usado por el servicio. */
+    private final RepositorioVehiculos repositorio = new RepositorioVehiculos();
+
+    /** Servicio de negocio. */
+    private final ServicioVehiculos servicio = new ServicioVehiculos(repositorio);
+
+    /**
+     * Inicia la aplicaci&#243;n: carga el stock y ejecuta el bucle del men&#250;.
+     */
+    public void iniciar() {
+        try {
+            servicio.inicializar();
+            System.out.println(&quot;Stock cargado desde &#39;&quot; + repositorio.getArchivo() + &quot;&#39;. &quot;
+                    + servicio.listarTodos().size() + &quot; veh&#237;culo(s).&quot;);
+        } catch (IOException | DatoInvalidoException error) {
+            System.out.println(&quot;Advertencia: no se pudo cargar el stock: &quot; + error.getMessage());
+        }
+
+        boolean salir = false;
+        while (!salir) {
+            try {
+                mostrarMenu();
+                Integer opcion = lector.leerEntero(&quot;  Opci&#243;n: &quot;, 0, 7);
+                salir = procesarOpcion(opcion);
+            } catch (VehiculoDuplicadoException | VehiculoNoEncontradoException
+                     | DatoInvalidoException error) {
+                System.out.println(&quot;  ! Error de negocio: &quot; + error.getMessage());
+            } catch (IOException error) {
+                System.out.println(&quot;  ! Error de persistencia: &quot; + error.getMessage());
+            } catch (NoSuchElementException error) {
+                System.out.println(&quot;Entrada finalizada. Saliendo...&quot;);
+                salir = true;
+            } catch (RuntimeException error) {
+                System.out.println(&quot;  ! Error inesperado controlado: &quot; + error.getMessage());
+            }
+        }
+        System.out.println(&quot;Hasta luego.&quot;);
+    }
+
+    /**
+     * Muestra el men&#250; principal.
+     */
+    private void mostrarMenu() {
+        System.out.println(System.lineSeparator()
+                + &quot;===== CONCESIONARIA MULTIMARCAS - GESTI&#211;N DE STOCK =====&quot;
+                + System.lineSeparator()
+                + &quot;  1) Alta de veh&#237;culo&quot; + System.lineSeparator()
+                + &quot;  2) Baja de veh&#237;culo&quot; + System.lineSeparator()
+                + &quot;  3) Modificaci&#243;n (precio o color)&quot; + System.lineSeparator()
+                + &quot;  4) Listado general&quot; + System.lineSeparator()
+                + &quot;  5) Filtros (tipo / estado / marca)&quot; + System.lineSeparator()
+                + &quot;  6) Simular venta e impuestos&quot; + System.lineSeparator()
+                + &quot;  7) Guardar stock ahora&quot; + System.lineSeparator()
+                + &quot;  0) Salir&quot;);
+    }
+
+    /**
+     * Ejecuta la opci&#243;n elegida.
+     *
+     * @param opcion opci&#243;n del men&#250; principal
+     * @return {@code true} si se debe salir
+     * @throws DatoInvalidoException         si un dato no es v&#225;lido
+     * @throws VehiculoDuplicadoException    si se repite un identificador
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la persistencia
+     */
+    private boolean procesarOpcion(Integer opcion) throws DatoInvalidoException,
+            VehiculoDuplicadoException, VehiculoNoEncontradoException, IOException {
+        switch (opcion) {
+            case 1 -&gt; altaVehiculo();
+            case 2 -&gt; bajaVehiculo();
+            case 3 -&gt; modificarVehiculo();
+            case 4 -&gt; System.out.println(FormateadorSalida.tabla(servicio.listarTodos()));
+            case 5 -&gt; filtrar();
+            case 6 -&gt; simular();
+            case 7 -&gt; {
+                servicio.guardar();
+                System.out.println(&quot;  Stock guardado correctamente.&quot;);
+            }
+            case 0 -&gt; {
+                return true;
+            }
+            default -&gt; System.out.println(&quot;  Opci&#243;n no reconocida.&quot;);
+        }
+        return false;
+    }
+
+    /**
+     * Solicita los datos y da de alta un veh&#237;culo del tipo elegido.
+     *
+     * @throws DatoInvalidoException        si los datos ingresados son inv&#225;lidos
+     * @throws VehiculoDuplicadoException   si el identificador ya existe
+     * @throws IOException                  si falla la persistencia
+     */
+    private void altaVehiculo() throws DatoInvalidoException,
+            VehiculoDuplicadoException, IOException {
+        System.out.println(&quot;-- ALTA DE VEH&#205;CULO --&quot;);
+        TipoVehiculo tipo = lector.leerEnum(&quot;  Tipo de veh&#237;culo:&quot;, TipoVehiculo.class);
+        String identificador = lector.leerTexto(&quot;  Identificador (patente/c&#243;digo): &quot;);
+        String marca = lector.leerTexto(&quot;  Marca: &quot;);
+        String modelo = lector.leerTexto(&quot;  Modelo: &quot;);
+        Integer anio = lector.leerEntero(&quot;  A&#241;o (1950-2026): &quot;,
+                Vehiculo.ANIO_MINIMO, Vehiculo.ANIO_MAXIMO);
+        String color = lector.leerTexto(&quot;  Color: &quot;);
+        EstadoVehiculo estado = lector.leerEnum(&quot;  Estado:&quot;, EstadoVehiculo.class);
+        Double kilometraje = estado == EstadoVehiculo.NUEVO
+                ? 0.0
+                : lector.leerDouble(&quot;  Kilometraje: &quot;, 0.1, null);
+        Double precio = lector.leerDouble(&quot;  Precio: &quot;, 0.01, null);
+
+        Vehiculo vehiculo = switch (tipo) {
+            case AUTOMOVIL -&gt; new Automovil(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    lector.leerEnum(&quot;  Carrocer&#237;a:&quot;, TipoCarroceria.class),
+                    lector.leerEntero(&quot;  Puertas (2-5): &quot;, 2, 5));
+            case CAMIONETA -&gt; new Camioneta(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    lector.leerEnum(&quot;  Cabina/caja:&quot;, TipoCabina.class),
+                    lector.leerEnum(&quot;  Tracci&#243;n:&quot;, TipoTraccion.class),
+                    lector.leerDouble(&quot;  Capacidad de carga (kg): &quot;, 0.1, null));
+            case MOTOCICLETA -&gt; new Motocicleta(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    lector.leerEnum(&quot;  Estilo:&quot;, EstiloMotocicleta.class),
+                    lector.leerEntero(&quot;  Cilindrada (cc): &quot;, 1, null));
+        };
+
+        servicio.darDeAlta(vehiculo);
+        System.out.println(&quot;  Alta exitosa.&quot; + FormateadorSalida.ficha(vehiculo));
+    }
+
+    /**
+     * Da de baja un veh&#237;culo previa confirmaci&#243;n.
+     *
+     * @throws DatoInvalidoException         si el id est&#225; vac&#237;o
+     * @throws VehiculoNoEncontradoException si no existe
+     * @throws IOException                   si falla la persistencia
+     */
+    private void bajaVehiculo() throws DatoInvalidoException,
+            VehiculoNoEncontradoException, IOException {
+        System.out.println(&quot;-- BAJA DE VEH&#205;CULO --&quot;);
+        String identificador = lector.leerTexto(&quot;  Identificador a eliminar: &quot;);
+        Vehiculo vehiculo = servicio.buscarPorId(identificador);
+        if (lector.leerSiNo(&quot;  &#191;Confirma la baja de &quot; + vehiculo.getMarca() + &quot; &quot;
+                + vehiculo.getModelo() + &quot;?&quot;)) {
+            servicio.darDeBaja(identificador);
+            System.out.println(&quot;  Veh&#237;culo eliminado.&quot;);
+        } else {
+            System.out.println(&quot;  Operaci&#243;n cancelada.&quot;);
+        }
+    }
+
+    /**
+     * Modifica el precio o el color de un veh&#237;culo.
+     *
+     * @throws DatoInvalidoException         si el dato nuevo es inv&#225;lido
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la persistencia
+     */
+    private void modificarVehiculo() throws DatoInvalidoException,
+            VehiculoNoEncontradoException, IOException {
+        System.out.println(&quot;-- MODIFICACI&#211;N --&quot;);
+        String identificador = lector.leerTexto(&quot;  Identificador del veh&#237;culo: &quot;);
+        System.out.println(FormateadorSalida.ficha(servicio.buscarPorId(identificador)));
+        Integer campo = lector.leerEntero(&quot;  1) Precio   2) Color -&gt; &quot;, 1, 2);
+        if (campo == 1) {
+            Double nuevoPrecio = lector.leerDouble(&quot;  Nuevo precio: &quot;, 0.01, null);
+            servicio.cambiarPrecio(identificador, nuevoPrecio);
+        } else {
+            String nuevoColor = lector.leerTexto(&quot;  Nuevo color: &quot;);
+            servicio.cambiarColor(identificador, nuevoColor);
+        }
+        System.out.println(&quot;  Modificaci&#243;n guardada.&quot;);
+    }
+
+    /**
+     * Solicita el criterio de filtrado y muestra los resultados.
+     *
+     * @throws DatoInvalidoException si la marca est&#225; vac&#237;a
+     */
+    private void filtrar() throws DatoInvalidoException {
+        System.out.println(&quot;-- FILTROS --&quot;);
+        Integer opcion = lector.leerEntero(&quot;  1) Tipo  2) Estado  3) Marca -&gt; &quot;, 1, 3);
+        List&lt;Vehiculo&gt; resultados = switch (opcion) {
+            case 1 -&gt; servicio.listarPorTipo(
+                    lector.leerEnum(&quot;  Tipo:&quot;, TipoVehiculo.class));
+            case 2 -&gt; servicio.listarPorEstado(
+                    lector.leerEnum(&quot;  Estado:&quot;, EstadoVehiculo.class));
+            default -&gt; servicio.listarPorMarca(lector.leerTexto(&quot;  Marca (o parte): &quot;));
+        };
+        System.out.println(FormateadorSalida.tabla(resultados));
+    }
+
+    /**
+     * Simula una venta con descuento, impuesto y tasaci&#243;n.
+     *
+     * @throws DatoInvalidoException         si el descuento o el id son inv&#225;lidos
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     */
+    private void simular() throws DatoInvalidoException, VehiculoNoEncontradoException {
+        System.out.println(&quot;-- SIMULACI&#211;N DE VENTA --&quot;);
+        String identificador = lector.leerTexto(&quot;  Identificador del veh&#237;culo: &quot;);
+        Double descuento = lector.leerDouble(&quot;  Descuento (%) : &quot;, 0.0, 100.0);
+        SimulacionVenta resultado = servicio.simularVenta(identificador, descuento);
+        System.out.println(FormateadorSalida.simulacion(resultado));
+    }
+}
+</code></pre></details>
+<details><summary>vista/FormateadorSalida.java</summary><pre><code>package vista;
+
+import modelo.SimulacionVenta;
+import modelo.Vehiculo;
+
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Clase utilitaria de presentaci&#243;n: convierte datos del dominio en texto para
+ * la consola. No contiene reglas de negocio ni acceso a archivos.
+ */
+public final class FormateadorSalida {
+
+    /** Constructor privado de clase utilitaria. */
+    private FormateadorSalida() {
+    }
+
+    /**
+     * Formatea una lista de veh&#237;culos como una tabla alineada.
+     *
+     * @param vehiculos veh&#237;culos a mostrar
+     * @return tabla lista para imprimir
+     */
+    public static String tabla(List&lt;Vehiculo&gt; vehiculos) {
+        if (vehiculos.isEmpty()) {
+            return &quot;  No hay veh&#237;culos que coincidan con el criterio.&quot;;
+        }
+        StringBuilder salida = new StringBuilder();
+        salida.append(String.format(Locale.US,&quot;  %-16s %-14s %-14s %-6s %-13s %-12s %12s%n&quot;,
+                &quot;ID&quot;, &quot;Marca&quot;, &quot;Modelo&quot;, &quot;A&#241;o&quot;, &quot;Estado&quot;, &quot;Tipo&quot;, &quot;Precio&quot;));
+        salida.append(&quot;  &quot;).append(&quot;-&quot;.repeat(94)).append(System.lineSeparator());
+        for (Vehiculo vehiculo : vehiculos) {
+            salida.append(String.format(Locale.US,&quot;  %-16s %-14s %-14s %-6d %-13s %-12s %12.2f%n&quot;,
+                    cortar(vehiculo.getIdentificador(), 16),
+                    cortar(vehiculo.getMarca(), 14),
+                    cortar(vehiculo.getModelo(), 14),
+                    vehiculo.getAnio(),
+                    vehiculo.getEstado().getEtiqueta(),
+                    vehiculo.obtenerTipo().getEtiqueta(),
+                    vehiculo.getPrecio()));
+        }
+        salida.append(&quot;  Total de registros: &quot;).append(vehiculos.size());
+        return salida.toString();
+    }
+
+    /**
+     * Muestra la ficha t&#233;cnica detallada de un veh&#237;culo.
+     *
+     * @param vehiculo veh&#237;culo a mostrar
+     * @return ficha t&#233;cnica formateada
+     */
+    public static String ficha(Vehiculo vehiculo) {
+        return System.lineSeparator() + &quot;  &quot; + vehiculo.obtenerFichaTecnicaDetallada();
+    }
+
+    /**
+     * Muestra el resultado de una simulaci&#243;n de venta.
+     *
+     * @param simulacion simulaci&#243;n a mostrar
+     * @return resumen formateado
+     */
+    public static String simulacion(SimulacionVenta simulacion) {
+        return System.lineSeparator()
+                + &quot;  Veh&#237;culo:       &quot; + simulacion.getVehiculo().obtenerFichaTecnicaDetallada() + System.lineSeparator()
+                + &quot;  Descuento:      &quot; + simulacion.getPorcentajeDescuento() + &quot; %&quot; + System.lineSeparator()
+                + &quot;  Precio final:   $&quot; + String.format(Locale.US,&quot;%.2f&quot;, simulacion.getPrecioFinal()) + System.lineSeparator()
+                + &quot;  Patente:        $&quot; + String.format(Locale.US,&quot;%.2f&quot;, simulacion.getImpuestoPatente()) + System.lineSeparator()
+                + &quot;  Valor tasado:   $&quot; + String.format(Locale.US,&quot;%.2f&quot;, simulacion.getValorTasado()) + System.lineSeparator()
+                + &quot;  TOTAL A COBRAR: $&quot; + String.format(Locale.US,&quot;%.2f&quot;, simulacion.getTotal());
+    }
+
+    /**
+     * Recorta un texto para que no rompa el ancho de la columna.
+     *
+     * @param texto texto original
+     * @param ancho ancho m&#225;ximo
+     * @return texto recortado
+     */
+    private static String cortar(String texto, int ancho) {
+        return texto.length() &lt;= ancho ? texto : texto.substring(0, ancho - 1) + &quot;…&quot;;
+    }
+}
+</code></pre></details>
+<details><summary>vista/Main.java</summary><pre><code>package vista;
+
+/**
+ * Punto de entrada de la aplicaci&#243;n.
+ */
+public final class Main {
+
+    /** Constructor privado de clase de arranque. */
+    private Main() {
+    }
+
+    /**
+     * Arranca la interfaz de consola de la concesionaria.
+     *
+     * @param args argumentos de l&#237;nea de comandos (no utilizados)
+     */
+    public static void main(String[] args) {
+        try {
+            new ConsolaApp().iniciar();
+        } catch (RuntimeException error) {
+            System.out.println(&quot;Error fatal controlado: &quot; + error.getMessage());
+        }
+    }
+}
+</code></pre></details>
+<details><summary>web/Json.java</summary><pre><code>package web;
+
+import modelo.Automovil;
+import modelo.Camioneta;
+import modelo.EstadoVehiculo;
+import modelo.EstiloMotocicleta;
+import modelo.Motocicleta;
+import modelo.SimulacionVenta;
+import modelo.TipoCabina;
+import modelo.TipoCarroceria;
+import modelo.TipoTraccion;
+import modelo.TipoVehiculo;
+import modelo.Vehiculo;
+
+import java.util.List;
+
+/**
+ * Serializador JSON m&#237;nimo implementado con Java est&#225;ndar.
+ *
+ * &lt;p&gt;Se evita cualquier librer&#237;a externa: solo se producen los tipos que la
+ * aplicaci&#243;n necesita (objetos, arreglos, cadenas, n&#250;meros y booleanos).
+ * Las cadenas se escapan correctamente para soportar acentos y comillas.&lt;/p&gt;
+ */
+public final class Json {
+
+    /** Constructor privado de clase utilitaria. */
+    private Json() {
+    }
+
+    /**
+     * Escapa una cadena para usarla dentro de un literal JSON.
+     *
+     * @param texto cadena original
+     * @return cadena escapada, sin las comillas envolventes
+     */
+    public static String escape(String texto) {
+        StringBuilder salida = new StringBuilder();
+        for (int i = 0; i &lt; texto.length(); i++) {
+            char caracter = texto.charAt(i);
+            switch (caracter) {
+                case &#39;&quot;&#39; -&gt; salida.append(&quot;\\\&quot;&quot;);
+                case &#39;\\&#39; -&gt; salida.append(&quot;\\\\&quot;);
+                case &#39;\b&#39; -&gt; salida.append(&quot;\\b&quot;);
+                case &#39;\f&#39; -&gt; salida.append(&quot;\\f&quot;);
+                case &#39;\n&#39; -&gt; salida.append(&quot;\\n&quot;);
+                case &#39;\r&#39; -&gt; salida.append(&quot;\\r&quot;);
+                case &#39;\t&#39; -&gt; salida.append(&quot;\\t&quot;);
+                default -&gt; {
+                    if (caracter &lt; 0x20) {
+                        salida.append(String.format(&quot;\\u%04x&quot;, (int) caracter));
+                    } else {
+                        salida.append(caracter);
+                    }
+                }
+            }
+        }
+        return salida.toString();
+    }
+
+    /**
+     * Serializa un veh&#237;culo con sus atributos comunes y espec&#237;ficos.
+     *
+     * @param vehiculo veh&#237;culo a serializar
+     * @return objeto JSON
+     */
+    public static String vehiculo(Vehiculo vehiculo) {
+        StringBuilder salida = new StringBuilder(&quot;{&quot;);
+        cadena(salida, &quot;id&quot;, vehiculo.getIdentificador(), true);
+        cadena(salida, &quot;marca&quot;, vehiculo.getMarca(), false);
+        cadena(salida, &quot;modelo&quot;, vehiculo.getModelo(), false);
+        numero(salida, &quot;anio&quot;, vehiculo.getAnio().doubleValue(), false);
+        cadena(salida, &quot;color&quot;, vehiculo.getColor(), false);
+        cadena(salida, &quot;estado&quot;, vehiculo.getEstado().name(), false);
+        cadena(salida, &quot;estadoEtiqueta&quot;, vehiculo.getEstado().getEtiqueta(), false);
+        numero(salida, &quot;kilometraje&quot;, vehiculo.getKilometraje(), false);
+        numero(salida, &quot;precio&quot;, vehiculo.getPrecio(), false);
+        cadena(salida, &quot;tipo&quot;, vehiculo.obtenerTipo().name(), false);
+        cadena(salida, &quot;tipoEtiqueta&quot;, vehiculo.obtenerTipo().getEtiqueta(), false);
+        numero(salida, &quot;impuesto&quot;, vehiculo.calcularImpuestoPatente(), false);
+        numero(salida, &quot;tasado&quot;, vehiculo.calcularValorTasado(), false);
+
+        if (vehiculo instanceof Automovil) {
+            Automovil auto = (Automovil) vehiculo;
+            cadena(salida, &quot;carroceria&quot;, auto.getCarroceria().name(), false);
+            cadena(salida, &quot;carroceriaEtiqueta&quot;, auto.getCarroceria().getEtiqueta(), false);
+            numero(salida, &quot;puertas&quot;, auto.getPuertas().doubleValue(), false);
+        } else if (vehiculo instanceof Camioneta) {
+            Camioneta camioneta = (Camioneta) vehiculo;
+            cadena(salida, &quot;cabina&quot;, camioneta.getCabina().name(), false);
+            cadena(salida, &quot;cabinaEtiqueta&quot;, camioneta.getCabina().getEtiqueta(), false);
+            cadena(salida, &quot;traccion&quot;, camioneta.getTraccion().name(), false);
+            numero(salida, &quot;capacidadCarga&quot;, camioneta.getCapacidadCarga(), false);
+        } else if (vehiculo instanceof Motocicleta) {
+            Motocicleta moto = (Motocicleta) vehiculo;
+            cadena(salida, &quot;estilo&quot;, moto.getEstilo().name(), false);
+            cadena(salida, &quot;estiloEtiqueta&quot;, moto.getEstilo().getEtiqueta(), false);
+            numero(salida, &quot;cilindrada&quot;, moto.getCilindrada().doubleValue(), false);
+        }
+        cadena(salida, &quot;ficha&quot;, vehiculo.obtenerFichaTecnicaDetallada(), false);
+        return salida.append(&#39;}&#39;).toString();
+    }
+
+    /**
+     * Serializa una lista de veh&#237;culos.
+     *
+     * @param vehiculos veh&#237;culos a serializar
+     * @return arreglo JSON
+     */
+    public static String lista(List&lt;Vehiculo&gt; vehiculos) {
+        StringBuilder salida = new StringBuilder(&quot;[&quot;);
+        for (int i = 0; i &lt; vehiculos.size(); i++) {
+            if (i &gt; 0) {
+                salida.append(&#39;,&#39;);
+            }
+            salida.append(vehiculo(vehiculos.get(i)));
+        }
+        return salida.append(&#39;]&#39;).toString();
+    }
+
+    /**
+     * Serializa el resultado de una simulaci&#243;n de venta.
+     *
+     * @param simulacion simulaci&#243;n a serializar
+     * @return objeto JSON
+     */
+    public static String simulacion(SimulacionVenta simulacion) {
+        StringBuilder salida = new StringBuilder(&quot;{&quot;);
+        cadena(salida, &quot;id&quot;, simulacion.getVehiculo().getIdentificador(), true);
+        numero(salida, &quot;descuento&quot;, simulacion.getPorcentajeDescuento(), false);
+        numero(salida, &quot;precioBase&quot;, simulacion.getVehiculo().getPrecio(), false);
+        numero(salida, &quot;precioFinal&quot;, simulacion.getPrecioFinal(), false);
+        numero(salida, &quot;impuesto&quot;, simulacion.getImpuestoPatente(), false);
+        numero(salida, &quot;tasado&quot;, simulacion.getValorTasado(), false);
+        numero(salida, &quot;total&quot;, simulacion.getTotal(), false);
+        return salida.append(&#39;}&#39;).toString();
+    }
+
+    /**
+     * Devuelve todas las constantes del dominio para poblar los formularios.
+     *
+     * @return objeto JSON con los enums del dominio
+     */
+    public static String opciones() {
+        StringBuilder salida = new StringBuilder(&quot;{&quot;);
+        salida.append(&quot;\&quot;tipos\&quot;:&quot;).append(opcionesTipos()).append(&#39;,&#39;);
+        salida.append(&quot;\&quot;estados\&quot;:&quot;).append(opciones(EstadoVehiculo.values(),
+                e -&gt; e.getEtiqueta())).append(&#39;,&#39;);
+        salida.append(&quot;\&quot;carrocerias\&quot;:&quot;).append(opciones(TipoCarroceria.values(),
+                e -&gt; e.getEtiqueta())).append(&#39;,&#39;);
+        salida.append(&quot;\&quot;cabinas\&quot;:&quot;).append(opciones(TipoCabina.values(),
+                e -&gt; e.getEtiqueta())).append(&#39;,&#39;);
+        salida.append(&quot;\&quot;tracciones\&quot;:&quot;).append(opciones(TipoTraccion.values(),
+                e -&gt; e.getEtiqueta())).append(&#39;,&#39;);
+        salida.append(&quot;\&quot;estilos\&quot;:&quot;).append(opciones(EstiloMotocicleta.values(),
+                e -&gt; e.getEtiqueta()));
+        return salida.append(&#39;}&#39;).toString();
+    }
+
+    /**
+     * Serializa los tipos de veh&#237;culo (la etiqueta se obtiene del enum).
+     *
+     * @return arreglo JSON
+     */
+    private static String opcionesTipos() {
+        StringBuilder salida = new StringBuilder(&quot;[&quot;);
+        for (int i = 0; i &lt; TipoVehiculo.values().length; i++) {
+            if (i &gt; 0) {
+                salida.append(&#39;,&#39;);
+            }
+            TipoVehiculo tipo = TipoVehiculo.values()[i];
+            salida.append(&quot;{\&quot;valor\&quot;:\&quot;&quot;).append(tipo.name())
+                    .append(&quot;\&quot;,\&quot;etiqueta\&quot;:\&quot;&quot;).append(escape(tipo.getEtiqueta())).append(&quot;\&quot;}&quot;);
+        }
+        return salida.append(&#39;]&#39;).toString();
+    }
+
+    /**
+     * Serializa gen&#233;ricamente un arreglo de constantes de enum.
+     *
+     * @param valores   constantes del enum
+     * @param etiqueta funci&#243;n que devuelve la etiqueta legible
+     * @param &lt;E&gt;       tipo del enum
+     * @return arreglo JSON
+     */
+    private static &lt;E extends Enum&lt;E&gt;&gt; String opciones(E[] valores,
+                                                       java.util.function.Function&lt;E, String&gt; etiqueta) {
+        StringBuilder salida = new StringBuilder(&quot;[&quot;);
+        for (int i = 0; i &lt; valores.length; i++) {
+            if (i &gt; 0) {
+                salida.append(&#39;,&#39;);
+            }
+            salida.append(&quot;{\&quot;valor\&quot;:\&quot;&quot;).append(valores[i].name())
+                    .append(&quot;\&quot;,\&quot;etiqueta\&quot;:\&quot;&quot;).append(escape(etiqueta.apply(valores[i])))
+                    .append(&quot;\&quot;}&quot;);
+        }
+        return salida.append(&#39;]&#39;).toString();
+    }
+
+    /**
+     * Genera un objeto JSON de error.
+     *
+     * @param mensaje mensaje de error
+     * @return objeto JSON
+     */
+    public static String error(String mensaje) {
+        StringBuilder salida = new StringBuilder(&quot;{\&quot;ok\&quot;:false,\&quot;mensaje\&quot;:\&quot;&quot;);
+        return salida.append(escape(mensaje)).append(&quot;\&quot;}&quot;).toString();
+    }
+
+    /**
+     * Genera un objeto JSON de confirmaci&#243;n.
+     *
+     * @param mensaje mensaje de confirmaci&#243;n
+     * @return objeto JSON
+     */
+    public static String mensaje(String mensaje) {
+        StringBuilder salida = new StringBuilder(&quot;{\&quot;ok\&quot;:true,\&quot;mensaje\&quot;:\&quot;&quot;);
+        return salida.append(escape(mensaje)).append(&quot;\&quot;}&quot;).toString();
+    }
+
+    /**
+     * Agrega una propiedad de texto al objeto en construcci&#243;n.
+     *
+     * @param objeto  constructor del objeto
+     * @param clave   nombre de la propiedad
+     * @param valor   valor de la propiedad
+     * @param primera indica si es la primera propiedad
+     */
+    private static void cadena(StringBuilder objeto, String clave, String valor, boolean primera) {
+        if (!primera) {
+            objeto.append(&#39;,&#39;);
+        }
+        objeto.append(&#39;&quot;&#39;).append(clave).append(&quot;\&quot;:\&quot;&quot;).append(escape(valor)).append(&#39;&quot;&#39;);
+    }
+
+    /**
+     * Agrega una propiedad num&#233;rica al objeto en construcci&#243;n.
+     *
+     * @param objeto  constructor del objeto
+     * @param clave   nombre de la propiedad
+     * @param valor   valor num&#233;rico
+     * @param primera indica si es la primera propiedad
+     */
+    private static void numero(StringBuilder objeto, String clave, Double valor, boolean primera) {
+        if (!primera) {
+            objeto.append(&#39;,&#39;);
+        }
+        objeto.append(&#39;&quot;&#39;).append(clave).append(&quot;\&quot;:&quot;).append(valor);
+    }
+}
+</code></pre></details>
+<details><summary>web/ServidorWeb.java</summary><pre><code>package web;
+
+import excepciones.DatoInvalidoException;
+import excepciones.VehiculoDuplicadoException;
+import excepciones.VehiculoNoEncontradoException;
+import modelo.Automovil;
+import modelo.Camioneta;
+import modelo.EstadoVehiculo;
+import modelo.EstiloMotocicleta;
+import modelo.Motocicleta;
+import modelo.SimulacionVenta;
+import modelo.TipoCabina;
+import modelo.TipoCarroceria;
+import modelo.TipoTraccion;
+import modelo.TipoVehiculo;
+import modelo.Vehiculo;
+import repositorio.RepositorioVehiculos;
+import servicio.ServicioVehiculos;
+import util.Validador;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Servidor HTTP embebido, implementado &#250;nicamente con Java est&#225;ndar.
+ *
+ * &lt;p&gt;&lt;b&gt;Decisi&#243;n de dise&#241;o:&lt;/b&gt; se usa {@link ServerSocket} en lugar de un
+ * framework para mantener el requerimiento &quot;sin dependencias pesadas&quot;. Cada
+ * petici&#243;n se atiende en un hilo del pool y se delega al
+ * {@link ServicioVehiculos}; la capa web solo traduce HTTP ↔ objetos del
+ * dominio, sin duplicar reglas de negocio.&lt;/p&gt;
+ */
+public class ServidorWeb {
+
+    /** Puerto por defecto. */
+    private static final Integer PUERTO_DEFECTO = 8080;
+
+    /** Directorio por defecto de los archivos est&#225;ticos. */
+    private static final Path ESTATICO_DEFECTO = Paths.get(&quot;web-static&quot;);
+
+    /** Tipo de contenido JSON. */
+    private static final String TIPO_JSON = &quot;application/json; charset=utf-8&quot;;
+
+    /** Servicio de negocio. */
+    private final ServicioVehiculos servicio;
+
+    /** Directorio de archivos est&#225;ticos. */
+    private final Path raizEstatica;
+
+    /** Puerto de escucha. */
+    private final Integer puerto;
+
+    /** Socket servidor. */
+    private ServerSocket servidor;
+
+    /** Pool de hilos para atender peticiones. */
+    private ExecutorService pool;
+
+    /** Bandera de ejecuci&#243;n. */
+    private volatile boolean ejecutando;
+
+    /**
+     * Crea el servidor con el repositorio por defecto.
+     *
+     * @param puerto        puerto de escucha
+     * @param raizEstatica  directorio con index.html, styles.css y app.js
+     */
+    public ServidorWeb(Integer puerto, Path raizEstatica) {
+        this(puerto, raizEstatica, new RepositorioVehiculos());
+    }
+
+    /**
+     * Crea el servidor con un repositorio inyectado.
+     *
+     * @param puerto        puerto de escucha
+     * @param raizEstatica  directorio de archivos est&#225;ticos
+     * @param repositorio   repositorio persistible de veh&#237;culos
+     */
+    public ServidorWeb(Integer puerto, Path raizEstatica, RepositorioVehiculos repositorio) {
+        this.puerto = puerto;
+        this.raizEstatica = raizEstatica.normalize();
+        this.servicio = new ServicioVehiculos(repositorio);
+    }
+
+    /**
+     * Carga el stock y comienza a atender peticiones hasta que se detenga.
+     *
+     * @throws IOException           si no se puede abrir el puerto o leer el stock
+     * @throws DatoInvalidoException si el archivo de stock contiene datos corruptos
+     */
+    public void iniciar() throws IOException, DatoInvalidoException {
+        servicio.inicializar();
+        pool = Executors.newFixedThreadPool(12);
+        servidor = new ServerSocket(puerto, 50, InetAddress.getLoopbackAddress());
+        ejecutando = true;
+        Runtime.getRuntime().addShutdownHook(new Thread(this::detener));
+        System.out.println(&quot;Servidor web iniciado en http://localhost:&quot; + puerto);
+        System.out.println(&quot;Veh&#237;culos en stock: &quot; + servicio.listarTodos().size());
+
+        while (ejecutando) {
+            try {
+                Socket cliente = servidor.accept();
+                pool.execute(() -&gt; atender(cliente));
+            } catch (IOException error) {
+                if (ejecutando) {
+                    System.out.println(&quot;Error al aceptar conexi&#243;n: &quot; + error.getMessage());
+                }
+            }
+        }
+        pool.shutdown();
+    }
+
+    /**
+     * Detiene el servidor y libera el puerto.
+     */
+    public void detener() {
+        ejecutando = false;
+        try {
+            if (servidor != null &amp;&amp; !servidor.isClosed()) {
+                servidor.close();
+            }
+        } catch (IOException error) {
+            System.out.println(&quot;Error al cerrar el servidor: &quot; + error.getMessage());
+        }
+    }
+
+    /**
+     * Atiende una petici&#243;n HTTP y env&#237;a la respuesta.
+     *
+     * @param cliente socket del cliente
+     */
+    private void atender(Socket cliente) {
+        try (cliente;
+             BufferedReader lector = new BufferedReader(
+                     new InputStreamReader(cliente.getInputStream(), StandardCharsets.UTF_8));
+             OutputStream salida = cliente.getOutputStream()) {
+
+            String solicitud = lector.readLine();
+            if (solicitud == null || solicitud.isBlank()) {
+                return;
+            }
+            String[] partes = solicitud.split(&quot; &quot;);
+            if (partes.length &lt; 2) {
+                return;
+            }
+            String metodo = partes[0].toUpperCase();
+            String objetivo = partes[1];
+
+            Map&lt;String, String&gt; cabeceras = new HashMap&lt;&gt;();
+            String cabecera;
+            while ((cabecera = lector.readLine()) != null &amp;&amp; !cabecera.isEmpty()) {
+                int separador = cabecera.indexOf(&#39;:&#39;);
+                if (separador &gt; 0) {
+                    cabeceras.put(cabecera.substring(0, separador).trim().toLowerCase(),
+                            cabecera.substring(separador + 1).trim());
+                }
+            }
+
+            Integer longitud = 0;
+            try {
+                longitud = Integer.parseInt(cabeceras.getOrDefault(&quot;content-length&quot;, &quot;0&quot;));
+            } catch (NumberFormatException ignorado) {
+                longitud = 0;
+            }
+            char[] cuerpoCaracteres = new char[longitud];
+            Integer leidos = 0;
+            while (leidos &lt; longitud) {
+                int cantidad = lector.read(cuerpoCaracteres, leidos, longitud - leidos);
+                if (cantidad &lt; 0) {
+                    break;
+                }
+                leidos += cantidad;
+            }
+            String cuerpo = new String(cuerpoCaracteres, 0, leidos);
+
+            Respuesta respuesta = enrutar(metodo, objetivo, cuerpo);
+            escribir(salida, respuesta);
+        } catch (IOException error) {
+            System.out.println(&quot;Error en petici&#243;n: &quot; + error.getMessage());
+        } catch (RuntimeException error) {
+            System.out.println(&quot;Error inesperado en petici&#243;n: &quot; + error.getMessage());
+        }
+    }
+
+    /**
+     * Dirige la petici&#243;n al controlador API o al archivo est&#225;tico correspondiente.
+     *
+     * @param metodo    m&#233;todo HTTP
+     * @param objetivo  ruta con query string
+     * @param cuerpo    cuerpo de la petici&#243;n
+     * @return respuesta HTTP
+     */
+    private Respuesta enrutar(String metodo, String objetivo, String cuerpo) {
+        try {
+            int indiceConsulta = objetivo.indexOf(&#39;?&#39;);
+            String ruta = indiceConsulta &gt;= 0 ? objetivo.substring(0, indiceConsulta) : objetivo;
+            String consulta = indiceConsulta &gt;= 0 ? objetivo.substring(indiceConsulta + 1) : &quot;&quot;;
+
+            Map&lt;String, String&gt; parametros = new LinkedHashMap&lt;&gt;();
+            parametros.putAll(parsearFormulario(consulta));
+            parametros.putAll(parsearFormulario(cuerpo));
+
+            if (ruta.startsWith(&quot;/api/&quot;)) {
+                return api(metodo, ruta, parametros);
+            }
+            if (metodo.equals(&quot;GET&quot;) || metodo.equals(&quot;HEAD&quot;)) {
+                return estatico(ruta);
+            }
+            return new Respuesta(405, Json.error(&quot;M&#233;todo no permitido.&quot;), TIPO_JSON);
+        } catch (DatoInvalidoException | VehiculoDuplicadoException
+                 | VehiculoNoEncontradoException error) {
+            return new Respuesta(400, Json.error(error.getMessage()), TIPO_JSON);
+        } catch (NumberFormatException error) {
+            return new Respuesta(400, Json.error(&quot;Se esperaba un valor num&#233;rico.&quot;), TIPO_JSON);
+        } catch (IOException error) {
+            return new Respuesta(500, Json.error(&quot;Error de persistencia: &quot; + error.getMessage()),
+                    TIPO_JSON);
+        }
+    }
+
+    /**
+     * Controlador de la API REST.
+     *
+     * @param metodo     m&#233;todo HTTP
+     * @param ruta       ruta de la API
+     * @param parametros par&#225;metros de consulta y cuerpo
+     * @return respuesta HTTP
+     * @throws DatoInvalidoException         si un par&#225;metro no es v&#225;lido
+     * @throws VehiculoDuplicadoException    si se repite un identificador
+     * @throws VehiculoNoEncontradoException si no existe el veh&#237;culo
+     * @throws IOException                   si falla la persistencia
+     */
+    private Respuesta api(String metodo, String ruta, Map&lt;String, String&gt; parametros)
+            throws DatoInvalidoException, VehiculoDuplicadoException,
+            VehiculoNoEncontradoException, IOException {
+
+        if (ruta.equals(&quot;/api/opciones&quot;) &amp;&amp; metodo.equals(&quot;GET&quot;)) {
+            return new Respuesta(200, Json.opciones(), TIPO_JSON);
+        }
+
+        if (ruta.equals(&quot;/api/vehiculos&quot;)) {
+            if (metodo.equals(&quot;GET&quot;)) {
+                TipoVehiculo tipo = enumOpcional(parametros.get(&quot;tipo&quot;), TipoVehiculo.class);
+                EstadoVehiculo estado = enumOpcional(parametros.get(&quot;estado&quot;), EstadoVehiculo.class);
+                List&lt;Vehiculo&gt; resultados = servicio.listarConFiltros(tipo, estado,
+                        parametros.get(&quot;marca&quot;));
+                return new Respuesta(200, Json.lista(resultados), TIPO_JSON);
+            }
+            if (metodo.equals(&quot;POST&quot;)) {
+                Vehiculo vehiculo = construirVehiculo(parametros);
+                servicio.darDeAlta(vehiculo);
+                return new Respuesta(201, Json.mensaje(&quot;Veh&#237;culo dado de alta correctamente.&quot;),
+                        TIPO_JSON);
+            }
+            return new Respuesta(405, Json.error(&quot;M&#233;todo no permitido.&quot;), TIPO_JSON);
+        }
+
+        if (ruta.equals(&quot;/api/simulacion&quot;) &amp;&amp; metodo.equals(&quot;POST&quot;)) {
+            SimulacionVenta simulacion = servicio.simularVenta(
+                    parametros.get(&quot;id&quot;),
+                    Validador.parsearDouble(parametros.get(&quot;descuento&quot;), &quot;descuento&quot;));
+            return new Respuesta(200, Json.simulacion(simulacion), TIPO_JSON);
+        }
+
+        if (ruta.startsWith(&quot;/api/vehiculos/&quot;)) {
+            String resto = ruta.substring(&quot;/api/vehiculos/&quot;.length());
+            String id = URLDecoder.decode(resto.split(&quot;/&quot;)[0], StandardCharsets.UTF_8);
+            if (metodo.equals(&quot;PUT&quot;) &amp;&amp; resto.endsWith(&quot;/precio&quot;)) {
+                servicio.cambiarPrecio(id, Validador.parsearDouble(parametros.get(&quot;precio&quot;), &quot;precio&quot;));
+                return new Respuesta(200, Json.mensaje(&quot;Precio actualizado.&quot;), TIPO_JSON);
+            }
+            if (metodo.equals(&quot;PUT&quot;) &amp;&amp; resto.endsWith(&quot;/color&quot;)) {
+                servicio.cambiarColor(id, parametros.get(&quot;color&quot;));
+                return new Respuesta(200, Json.mensaje(&quot;Color actualizado.&quot;), TIPO_JSON);
+            }
+            if (metodo.equals(&quot;DELETE&quot;) &amp;&amp; !resto.contains(&quot;/&quot;)) {
+                servicio.darDeBaja(id);
+                return new Respuesta(200, Json.mensaje(&quot;Veh&#237;culo eliminado.&quot;), TIPO_JSON);
+            }
+        }
+
+        return new Respuesta(404, Json.error(&quot;Recurso no encontrado.&quot;), TIPO_JSON);
+    }
+
+    /**
+     * Construye un veh&#237;culo del tipo indicado a partir de par&#225;metros HTTP.
+     *
+     * @param parametros par&#225;metros del formulario
+     * @return veh&#237;culo validado
+     * @throws DatoInvalidoException si falta o es inv&#225;lido alg&#250;n dato
+     */
+    private Vehiculo construirVehiculo(Map&lt;String, String&gt; parametros)
+            throws DatoInvalidoException {
+        String identificador = Validador.validarTextoNoVacio(parametros.get(&quot;id&quot;), &quot;identificador&quot;);
+        String marca = Validador.validarTextoNoVacio(parametros.get(&quot;marca&quot;), &quot;marca&quot;);
+        String modelo = Validador.validarTextoNoVacio(parametros.get(&quot;modelo&quot;), &quot;modelo&quot;);
+        Integer anio = Validador.parsearEntero(parametros.get(&quot;anio&quot;), &quot;anio&quot;);
+        String color = Validador.validarTextoNoVacio(parametros.get(&quot;color&quot;), &quot;color&quot;);
+        EstadoVehiculo estado = Validador.parsearEnum(parametros.get(&quot;estado&quot;), EstadoVehiculo.class);
+        Double kilometraje = estado == EstadoVehiculo.NUEVO
+                ? 0.0
+                : Validador.parsearDouble(parametros.get(&quot;kilometraje&quot;), &quot;kilometraje&quot;);
+        Double precio = Validador.parsearDouble(parametros.get(&quot;precio&quot;), &quot;precio&quot;);
+
+        TipoVehiculo tipo = Validador.parsearEnum(parametros.get(&quot;tipo&quot;), TipoVehiculo.class);
+        Vehiculo vehiculo = switch (tipo) {
+            case AUTOMOVIL -&gt; new Automovil(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    Validador.parsearEnum(parametros.get(&quot;carroceria&quot;), TipoCarroceria.class),
+                    Validador.parsearEntero(parametros.get(&quot;puertas&quot;), &quot;puertas&quot;));
+            case CAMIONETA -&gt; new Camioneta(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    Validador.parsearEnum(parametros.get(&quot;cabina&quot;), TipoCabina.class),
+                    Validador.parsearEnum(parametros.get(&quot;traccion&quot;), TipoTraccion.class),
+                    Validador.parsearDouble(parametros.get(&quot;capacidadCarga&quot;), &quot;capacidadCarga&quot;));
+            case MOTOCICLETA -&gt; new Motocicleta(identificador, marca, modelo, anio, color, estado,
+                    kilometraje, precio,
+                    Validador.parsearEnum(parametros.get(&quot;estilo&quot;), EstiloMotocicleta.class),
+                    Validador.parsearEntero(parametros.get(&quot;cilindrada&quot;), &quot;cilindrada&quot;));
+        };
+        vehiculo.validar();
+        return vehiculo;
+    }
+
+    /**
+     * Convierte un par&#225;metro opcional a enum.
+     *
+     * @param valor     texto del par&#225;metro, puede ser {@code null} o vac&#237;o
+     * @param tipoEnum  clase del enum
+     * @param &lt;E&gt;       tipo del enum
+     * @return constante del enum, o {@code null} si el par&#225;metro est&#225; ausente
+     * @throws DatoInvalidoException si el texto no es una constante v&#225;lida
+     */
+    private &lt;E extends Enum&lt;E&gt;&gt; E enumOpcional(String valor, Class&lt;E&gt; tipoEnum)
+            throws DatoInvalidoException {
+        return valor == null || valor.isBlank() ? null : Validador.parsearEnum(valor, tipoEnum);
+    }
+
+    /**
+     * Sirve un archivo est&#225;tico protegiendo contra path traversal.
+     *
+     * @param ruta ruta solicitada
+     * @return respuesta HTTP con el archivo o 404
+     * @throws IOException si falla la lectura
+     */
+    private Respuesta estatico(String ruta) throws IOException {
+        String nombre = ruta.equals(&quot;/&quot;) ? &quot;index.html&quot; : ruta.substring(1);
+        Path archivo = raizEstatica.resolve(nombre).normalize();
+        if (!archivo.startsWith(raizEstatica) || !Files.isRegularFile(archivo)) {
+            return new Respuesta(404, Json.error(&quot;Recurso no encontrado.&quot;), TIPO_JSON);
+        }
+        String contenido = new String(Files.readAllBytes(archivo), StandardCharsets.UTF_8);
+        return new Respuesta(200, contenido, tipoContenido(archivo));
+    }
+
+    /**
+     * Devuelve el tipo MIME seg&#250;n la extensi&#243;n del archivo.
+     *
+     * @param archivo archivo solicitado
+     * @return tipo de contenido HTTP
+     */
+    private String tipoContenido(Path archivo) {
+        String nombre = archivo.getFileName().toString().toLowerCase();
+        if (nombre.endsWith(&quot;.html&quot;)) {
+            return &quot;text/html; charset=utf-8&quot;;
+        }
+        if (nombre.endsWith(&quot;.css&quot;)) {
+            return &quot;text/css; charset=utf-8&quot;;
+        }
+        if (nombre.endsWith(&quot;.js&quot;)) {
+            return &quot;application/javascript; charset=utf-8&quot;;
+        }
+        if (nombre.endsWith(&quot;.svg&quot;)) {
+            return &quot;image/svg+xml&quot;;
+        }
+        return &quot;application/octet-stream&quot;;
+    }
+
+    /**
+     * Analiza un cuerpo con formato application/x-www-form-urlencoded.
+     *
+     * @param texto texto a analizar
+     * @return mapa de par&#225;metros
+     */
+    private Map&lt;String, String&gt; parsearFormulario(String texto) {
+        Map&lt;String, String&gt; parametros = new LinkedHashMap&lt;&gt;();
+        if (texto == null || texto.isEmpty()) {
+            return parametros;
+        }
+        for (String pareja : texto.split(&quot;&amp;&quot;)) {
+            if (pareja.isEmpty()) {
+                continue;
+            }
+            String[] partes = pareja.split(&quot;=&quot;, 2);
+            try {
+                String clave = URLDecoder.decode(partes[0], StandardCharsets.UTF_8);
+                String valor = partes.length &gt; 1
+                        ? URLDecoder.decode(partes[1], StandardCharsets.UTF_8)
+                        : &quot;&quot;;
+                parametros.put(clave, valor);
+            } catch (IllegalArgumentException ignorado) {
+                // Se ignora un par&#225;metro mal codificado; el resto sigue siendo v&#225;lido.
+            }
+        }
+        return parametros;
+    }
+
+    /**
+     * Escribe la respuesta HTTP con cabeceras y cuerpo.
+     *
+     * @param salida   flujo de salida del socket
+     * @param respuesta respuesta a enviar
+     * @throws IOException si falla la escritura
+     */
+    private void escribir(OutputStream salida, Respuesta respuesta) throws IOException {
+        byte[] cuerpo = respuesta.contenido.getBytes(StandardCharsets.UTF_8);
+        String cabeceras = &quot;HTTP/1.1 &quot; + respuesta.codigo + &quot; &quot;
+                + razon(respuesta.codigo) + &quot;\r\n&quot;
+                + &quot;Content-Type: &quot; + respuesta.tipo + &quot;\r\n&quot;
+                + &quot;Content-Length: &quot; + cuerpo.length + &quot;\r\n&quot;
+                + &quot;Cache-Control: no-store\r\n&quot;
+                + &quot;Connection: close\r\n\r\n&quot;;
+        salida.write(cabeceras.getBytes(StandardCharsets.US_ASCII));
+        salida.write(cuerpo);
+        salida.flush();
+    }
+
+    /**
+     * Devuelve el texto descriptivo de un c&#243;digo HTTP.
+     *
+     * @param codigo c&#243;digo HTTP
+     * @return raz&#243;n del c&#243;digo
+     */
+    private String razon(Integer codigo) {
+        return switch (codigo) {
+            case 200 -&gt; &quot;OK&quot;;
+            case 201 -&gt; &quot;Created&quot;;
+            case 400 -&gt; &quot;Bad Request&quot;;
+            case 404 -&gt; &quot;Not Found&quot;;
+            case 405 -&gt; &quot;Method Not Allowed&quot;;
+            default -&gt; &quot;Internal Server Error&quot;;
+        };
+    }
+
+    /**
+     * Punto de entrada del servidor web.
+     *
+     * @param args argumentos opcionales: puerto y directorio de archivos est&#225;ticos
+     */
+    public static void main(String[] args) {
+        Integer puerto = PUERTO_DEFECTO;
+        Path estatico = ESTATICO_DEFECTO;
+        try {
+            if (args.length &gt; 0) {
+                puerto = Integer.valueOf(args[0]);
+            }
+            if (args.length &gt; 1) {
+                estatico = Paths.get(args[1]);
+            }
+            new ServidorWeb(puerto, estatico).iniciar();
+        } catch (NumberFormatException error) {
+            System.out.println(&quot;El puerto debe ser un n&#250;mero entero.&quot;);
+        } catch (DatoInvalidoException | IOException error) {
+            System.out.println(&quot;No se pudo iniciar el servidor: &quot; + error.getMessage());
+        }
+    }
+
+    /**
+     * Respuesta HTTP simple.
+     */
+    private static final class Respuesta {
+
+        /** C&#243;digo HTTP. */
+        private final Integer codigo;
+
+        /** Contenido de la respuesta. */
+        private final String contenido;
+
+        /** Tipo de contenido. */
+        private final String tipo;
+
+        /**
+         * Crea una respuesta.
+         *
+         * @param codigo    c&#243;digo HTTP
+         * @param contenido cuerpo de la respuesta
+         * @param tipo      tipo de contenido
+         */
+        private Respuesta(Integer codigo, String contenido, String tipo) {
+            this.codigo = codigo;
+            this.contenido = contenido;
+            this.tipo = tipo;
+        }
+    }
+}
+</code></pre></details>
+<details><summary>web-static/app.js</summary><pre><code>const $ = (id) =&gt; document.getElementById(id);
+
+const estado = { vehiculos: [] };
+let temporizadorToast;
+
+/** Escapa HTML para evitar inyecci&#243;n desde datos del dominio. */
+function esc(valor) {
+  return String(valor ?? &#39;&#39;).replace(/[&amp;&lt;&gt;&quot;&#39;]/g, (caracter) =&gt; ({
+    &#39;&amp;&#39;: &#39;&amp;amp;&#39;, &#39;&lt;&#39;: &#39;&amp;lt;&#39;, &#39;&gt;&#39;: &#39;&amp;gt;&#39;, &#39;&quot;&#39;: &#39;&amp;quot;&#39;, &quot;&#39;&quot;: &#39;&amp;#39;&#39;
+  })[caracter]);
+}
+
+/** Formatea un importe. */
+function dinero(valor) {
+  return &#39;$&#39; + Number(valor).toLocaleString(&#39;es-AR&#39;, {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+}
+
+/** Llama a la API y lanza un error legible cuando falla. */
+async function api(url, opciones = {}) {
+  const respuesta = await fetch(url, opciones);
+  let datos;
+  try {
+    datos = await respuesta.json();
+  } catch (error) {
+    datos = { mensaje: &#39;El servidor devolvi&#243; una respuesta inv&#225;lida.&#39; };
+  }
+  if (!respuesta.ok) {
+    throw new Error(datos.mensaje || &#39;Error &#39; + respuesta.status);
+  }
+  return datos;
+}
+
+/** Convierte un objeto en cuerpo form-urlencoded. */
+function cuerpo(datos) {
+  const parametros = new URLSearchParams();
+  Object.entries(datos).forEach(([clave, valor]) =&gt; {
+    if (valor !== null &amp;&amp; valor !== undefined &amp;&amp; valor !== &#39;&#39;) {
+      parametros.append(clave, valor);
+    }
+  });
+  return parametros.toString();
+}
+
+const CABECERA = { &#39;Content-Type&#39;: &#39;application/x-www-form-urlencoded; charset=utf-8&#39; };
+
+/** Muestra un aviso temporal. */
+function aviso(mensaje, esError = false) {
+  const nodo = $(&#39;toast&#39;);
+  nodo.textContent = mensaje;
+  nodo.classList.toggle(&#39;error&#39;, esError);
+  nodo.classList.add(&#39;visible&#39;);
+  clearTimeout(temporizadorToast);
+  temporizadorToast = setTimeout(() =&gt; nodo.classList.remove(&#39;visible&#39;), 3600);
+}
+
+/** Llena un select con opciones del enum. */
+function llenarSelect(select, opciones, conservarPrimera = false) {
+  const primera = conservarPrimera ? select.options[0].outerHTML : &#39;&#39;;
+  select.innerHTML = primera + opciones.map((opcion) =&gt;
+    `&lt;option value=&quot;${esc(opcion.valor)}&quot;&gt;${esc(opcion.etiqueta)}&lt;/option&gt;`).join(&#39;&#39;);
+}
+
+/** Carga los enums expuestos por el servidor. */
+async function cargarOpciones() {
+  const opciones = await api(&#39;/api/opciones&#39;);
+  llenarSelect($(&#39;filtroTipo&#39;), opciones.tipos, true);
+  llenarSelect($(&#39;filtroEstado&#39;), opciones.estados, true);
+  llenarSelect($(&#39;tipo&#39;), opciones.tipos);
+  llenarSelect($(&#39;estado&#39;), opciones.estados);
+  llenarSelect($(&#39;carroceria&#39;), opciones.carrocerias);
+  llenarSelect($(&#39;cabina&#39;), opciones.cabinas);
+  llenarSelect($(&#39;traccion&#39;), opciones.tracciones);
+  llenarSelect($(&#39;estilo&#39;), opciones.estilos);
+  actualizarCamposEspecificos();
+}
+
+/** Muestra solo los campos correspondientes al tipo y estado elegidos. */
+function actualizarCamposEspecificos() {
+  const tipo = $(&#39;tipo&#39;).value;
+  $(&#39;campoCarroceria&#39;).hidden = tipo !== &#39;AUTOMOVIL&#39;;
+  $(&#39;campoPuertas&#39;).hidden = tipo !== &#39;AUTOMOVIL&#39;;
+  $(&#39;campoCabina&#39;).hidden = tipo !== &#39;CAMIONETA&#39;;
+  $(&#39;campoTraccion&#39;).hidden = tipo !== &#39;CAMIONETA&#39;;
+  $(&#39;campoCarga&#39;).hidden = tipo !== &#39;CAMIONETA&#39;;
+  $(&#39;campoEstilo&#39;).hidden = tipo !== &#39;MOTOCICLETA&#39;;
+  $(&#39;campoCilindrada&#39;).hidden = tipo !== &#39;MOTOCICLETA&#39;;
+  $(&#39;campoKm&#39;).hidden = $(&#39;estado&#39;).value !== &#39;USADO&#39;;
+}
+
+/** Consulta el stock aplicando los filtros de la pantalla. */
+async function listar() {
+  const parametros = new URLSearchParams();
+  if ($(&#39;filtroTipo&#39;).value) parametros.set(&#39;tipo&#39;, $(&#39;filtroTipo&#39;).value);
+  if ($(&#39;filtroEstado&#39;).value) parametros.set(&#39;estado&#39;, $(&#39;filtroEstado&#39;).value);
+  if ($(&#39;filtroMarca&#39;).value.trim()) parametros.set(&#39;marca&#39;, $(&#39;filtroMarca&#39;).value.trim());
+  estado.vehiculos = await api(&#39;/api/vehiculos?&#39; + parametros.toString());
+  pintar();
+}
+
+/** Actualiza tarjetas, tabla y selector de simulaci&#243;n. */
+function pintar() {
+  const lista = estado.vehiculos;
+  const nuevos = lista.filter((v) =&gt; v.estado === &#39;NUEVO&#39;).length;
+  const valor = lista.reduce((suma, v) =&gt; suma + Number(v.precio), 0);
+  $(&#39;statTotal&#39;).textContent = lista.length;
+  $(&#39;statNuevos&#39;).textContent = nuevos;
+  $(&#39;statUsados&#39;).textContent = lista.length - nuevos;
+  $(&#39;statValor&#39;).textContent = dinero(valor);
+  $(&#39;contador&#39;).textContent = lista.length + &#39; resultado(s)&#39;;
+
+  if (lista.length === 0) {
+    $(&#39;cuerpoTabla&#39;).innerHTML =
+      &#39;&lt;tr&gt;&lt;td colspan=&quot;9&quot; class=&quot;vacio&quot;&gt;No hay veh&#237;culos que coincidan con los filtros.&lt;/td&gt;&lt;/tr&gt;&#39;;
+  } else {
+    $(&#39;cuerpoTabla&#39;).innerHTML = lista.map((v) =&gt; `
+      &lt;tr&gt;
+        &lt;td&gt;&lt;strong&gt;${esc(v.id)}&lt;/strong&gt;&lt;/td&gt;
+        &lt;td&gt;${esc(v.marca)} ${esc(v.modelo)}&lt;/td&gt;
+        &lt;td&gt;${esc(v.anio)}&lt;/td&gt;
+        &lt;td&gt;${esc(v.color)}&lt;/td&gt;
+        &lt;td&gt;&lt;span class=&quot;pill ${v.estado === &#39;NUEVO&#39; ? &#39;nuevo&#39; : &#39;usado&#39;}&quot;&gt;${esc(v.estadoEtiqueta)}&lt;/span&gt;&lt;/td&gt;
+        &lt;td&gt;${esc(v.tipoEtiqueta)}&lt;/td&gt;
+        &lt;td class=&quot;precio&quot;&gt;${dinero(v.precio)}&lt;/td&gt;
+        &lt;td&gt;${dinero(v.impuesto)}&lt;/td&gt;
+        &lt;td&gt;
+          &lt;div class=&quot;acciones-tabla&quot;&gt;
+            &lt;button class=&quot;btn peque&#241;o&quot; data-accion=&quot;ficha&quot; data-id=&quot;${esc(v.id)}&quot;&gt;Ficha&lt;/button&gt;
+            &lt;button class=&quot;btn peque&#241;o&quot; data-accion=&quot;editar&quot; data-id=&quot;${esc(v.id)}&quot;&gt;Editar&lt;/button&gt;
+            &lt;button class=&quot;btn peque&#241;o&quot; data-accion=&quot;simular&quot; data-id=&quot;${esc(v.id)}&quot;&gt;Simular&lt;/button&gt;
+            &lt;button class=&quot;btn peque&#241;o peligro&quot; data-accion=&quot;eliminar&quot; data-id=&quot;${esc(v.id)}&quot;&gt;Baja&lt;/button&gt;
+          &lt;/div&gt;
+        &lt;/td&gt;
+      &lt;/tr&gt;`).join(&#39;&#39;);
+  }
+
+  $(&#39;simularId&#39;).innerHTML = lista.map((v) =&gt;
+    `&lt;option value=&quot;${esc(v.id)}&quot;&gt;${esc(v.id)} — ${esc(v.marca)} ${esc(v.modelo)}&lt;/option&gt;`).join(&#39;&#39;);
+}
+
+/** Abre un modal por id. */
+function abrir(id) { $(id).hidden = false; }
+
+/** Cierra un modal por id. */
+function cerrar(id) { $(id).hidden = true; }
+
+/** Configura los eventos de la interfaz. */
+function cablear() {
+  $(&#39;btnNuevo&#39;).addEventListener(&#39;click&#39;, () =&gt; abrir(&#39;modalAlta&#39;));
+  $(&#39;btnSimular&#39;).addEventListener(&#39;click&#39;, () =&gt; {
+    $(&#39;resultadoSimulacion&#39;).hidden = true;
+    abrir(&#39;modalSimular&#39;);
+  });
+  $(&#39;btnRecargar&#39;).addEventListener(&#39;click&#39;, async () =&gt; {
+    try { await listar(); aviso(&#39;Stock actualizado.&#39;); } catch (error) { aviso(error.message, true); }
+  });
+  $(&#39;btnFiltrar&#39;).addEventListener(&#39;click&#39;, async () =&gt; {
+    try { await listar(); } catch (error) { aviso(error.message, true); }
+  });
+  $(&#39;btnLimpiar&#39;).addEventListener(&#39;click&#39;, async () =&gt; {
+    $(&#39;filtroTipo&#39;).value = &#39;&#39;;
+    $(&#39;filtroEstado&#39;).value = &#39;&#39;;
+    $(&#39;filtroMarca&#39;).value = &#39;&#39;;
+    try { await listar(); } catch (error) { aviso(error.message, true); }
+  });
+
+  $(&#39;tipo&#39;).addEventListener(&#39;change&#39;, actualizarCamposEspecificos);
+  $(&#39;estado&#39;).addEventListener(&#39;change&#39;, actualizarCamposEspecificos);
+
+  document.querySelectorAll(&#39;[data-cerrar]&#39;).forEach((boton) =&gt; {
+    boton.addEventListener(&#39;click&#39;, () =&gt; cerrar(boton.dataset.cerrar));
+  });
+  document.querySelectorAll(&#39;.modal&#39;).forEach((modal) =&gt; {
+    modal.addEventListener(&#39;click&#39;, (evento) =&gt; {
+      if (evento.target === modal) modal.hidden = true;
+    });
+  });
+
+  $(&#39;cuerpoTabla&#39;).addEventListener(&#39;click&#39;, (evento) =&gt; {
+    const boton = evento.target.closest(&#39;button[data-accion]&#39;);
+    if (!boton) return;
+    const vehiculo = estado.vehiculos.find((v) =&gt; v.id === boton.dataset.id);
+    switch (boton.dataset.accion) {
+      case &#39;ficha&#39;:
+        $(&#39;fichaTexto&#39;).textContent = vehiculo.ficha;
+        abrir(&#39;modalFicha&#39;);
+        break;
+      case &#39;editar&#39;:
+        $(&#39;editarId&#39;).value = vehiculo.id;
+        $(&#39;editarFicha&#39;).textContent = vehiculo.ficha;
+        $(&#39;editarPrecio&#39;).value = vehiculo.precio;
+        $(&#39;editarColor&#39;).value = vehiculo.color;
+        abrir(&#39;modalEditar&#39;);
+        break;
+      case &#39;simular&#39;:
+        $(&#39;simularId&#39;).value = vehiculo.id;
+        $(&#39;resultadoSimulacion&#39;).hidden = true;
+        abrir(&#39;modalSimular&#39;);
+        break;
+      case &#39;eliminar&#39;:
+        eliminar(vehiculo);
+        break;
+    }
+  });
+
+  $(&#39;formAlta&#39;).addEventListener(&#39;submit&#39;, async (evento) =&gt; {
+    evento.preventDefault();
+    const datos = Object.fromEntries(new FormData(evento.target).entries());
+    try {
+      await api(&#39;/api/vehiculos&#39;, { method: &#39;POST&#39;, headers: CABECERA, body: cuerpo(datos) });
+      cerrar(&#39;modalAlta&#39;);
+      evento.target.reset();
+      actualizarCamposEspecificos();
+      await listar();
+      aviso(&#39;Veh&#237;culo dado de alta correctamente.&#39;);
+    } catch (error) {
+      aviso(error.message, true);
+    }
+  });
+
+  $(&#39;formEditar&#39;).addEventListener(&#39;submit&#39;, async (evento) =&gt; {
+    evento.preventDefault();
+    const id = encodeURIComponent($(&#39;editarId&#39;).value);
+    try {
+      const precio = $(&#39;editarPrecio&#39;).value;
+      const color = $(&#39;editarColor&#39;).value.trim();
+      if (precio) {
+        await api(&#39;/api/vehiculos/&#39; + id + &#39;/precio&#39;,
+          { method: &#39;PUT&#39;, headers: CABECERA, body: cuerpo({ precio }) });
+      }
+      if (color) {
+        await api(&#39;/api/vehiculos/&#39; + id + &#39;/color&#39;,
+          { method: &#39;PUT&#39;, headers: CABECERA, body: cuerpo({ color }) });
+      }
+      cerrar(&#39;modalEditar&#39;);
+      await listar();
+      aviso(&#39;Modificaci&#243;n guardada.&#39;);
+    } catch (error) {
+      aviso(error.message, true);
+    }
+  });
+
+  $(&#39;formSimular&#39;).addEventListener(&#39;submit&#39;, async (evento) =&gt; {
+    evento.preventDefault();
+    try {
+      const resultado = await api(&#39;/api/simulacion&#39;, {
+        method: &#39;POST&#39;, headers: CABECERA,
+        body: cuerpo({ id: $(&#39;simularId&#39;).value, descuento: $(&#39;simularDescuento&#39;).value })
+      });
+      $(&#39;resultadoSimulacion&#39;).innerHTML = `
+        &lt;div&gt;&lt;span&gt;Precio base&lt;/span&gt;&lt;strong&gt;${dinero(resultado.precioBase)}&lt;/strong&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;span&gt;Descuento (${resultado.descuento}%)&lt;/span&gt;&lt;strong&gt;- ${dinero(resultado.precioBase - resultado.precioFinal)}&lt;/strong&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;span&gt;Precio final&lt;/span&gt;&lt;strong&gt;${dinero(resultado.precioFinal)}&lt;/strong&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;span&gt;Impuesto de patente&lt;/span&gt;&lt;strong&gt;${dinero(resultado.impuesto)}&lt;/strong&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;span&gt;Valor tasado&lt;/span&gt;&lt;strong&gt;${dinero(resultado.tasado)}&lt;/strong&gt;&lt;/div&gt;
+        &lt;div class=&quot;total&quot;&gt;&lt;span&gt;Total a cobrar&lt;/span&gt;&lt;strong&gt;${dinero(resultado.total)}&lt;/strong&gt;&lt;/div&gt;`;
+      $(&#39;resultadoSimulacion&#39;).hidden = false;
+    } catch (error) {
+      aviso(error.message, true);
+    }
+  });
+}
+
+/** Da de baja un veh&#237;culo previa confirmaci&#243;n. */
+async function eliminar(vehiculo) {
+  if (!confirm(&#39;&#191;Confirmar la baja de &#39; + vehiculo.id + &#39; — &#39; + vehiculo.marca + &#39; &#39; + vehiculo.modelo + &#39;?&#39;)) return;
+  try {
+    await api(&#39;/api/vehiculos/&#39; + encodeURIComponent(vehiculo.id), { method: &#39;DELETE&#39; });
+    await listar();
+    aviso(&#39;Veh&#237;culo eliminado.&#39;);
+  } catch (error) {
+    aviso(error.message, true);
+  }
+}
+
+/** Arranque de la aplicaci&#243;n. */
+async function iniciar() {
+  cablear();
+  try {
+    await cargarOpciones();
+    await listar();
+  } catch (error) {
+    aviso(&#39;No se pudo conectar con el servidor: &#39; + error.message, true);
+  }
+}
+
+iniciar();
+</code></pre></details>
+<details><summary>web-static/index.html</summary><pre><code>&lt;!doctype html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;title&gt;Concesionaria Multimarcas | Gesti&#243;n de Stock&lt;/title&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;/styles.css&quot;&gt;
+  &lt;script src=&quot;/app.js&quot; defer&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;header class=&quot;barra&quot;&gt;
+    &lt;div class=&quot;marca&quot;&gt;
+      &lt;div class=&quot;logo&quot;&gt;CM&lt;/div&gt;
+      &lt;div&gt;
+        &lt;h1&gt;Concesionaria Multimarcas&lt;/h1&gt;
+        &lt;p&gt;Sistema de gesti&#243;n de stock &#183; Java 17 + web est&#225;ndar&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;acciones-barra&quot;&gt;
+      &lt;button class=&quot;btn primario&quot; id=&quot;btnNuevo&quot;&gt;+ Nuevo veh&#237;culo&lt;/button&gt;
+      &lt;button class=&quot;btn&quot; id=&quot;btnSimular&quot;&gt;Simular venta&lt;/button&gt;
+      &lt;button class=&quot;btn&quot; id=&quot;btnRecargar&quot;&gt;Recargar&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;main&gt;
+    &lt;section class=&quot;tarjetas&quot;&gt;
+      &lt;article class=&quot;tarjeta&quot;&gt;&lt;span class=&quot;etiqueta&quot;&gt;Total en stock&lt;/span&gt;&lt;strong id=&quot;statTotal&quot;&gt;0&lt;/strong&gt;&lt;span class=&quot;detalle&quot;&gt;veh&#237;culos&lt;/span&gt;&lt;/article&gt;
+      &lt;article class=&quot;tarjeta&quot;&gt;&lt;span class=&quot;etiqueta&quot;&gt;Nuevos (0 km)&lt;/span&gt;&lt;strong id=&quot;statNuevos&quot;&gt;0&lt;/strong&gt;&lt;span class=&quot;detalle&quot;&gt;unidades&lt;/span&gt;&lt;/article&gt;
+      &lt;article class=&quot;tarjeta&quot;&gt;&lt;span class=&quot;etiqueta&quot;&gt;Usados&lt;/span&gt;&lt;strong id=&quot;statUsados&quot;&gt;0&lt;/strong&gt;&lt;span class=&quot;detalle&quot;&gt;unidades&lt;/span&gt;&lt;/article&gt;
+      &lt;article class=&quot;tarjeta&quot;&gt;&lt;span class=&quot;etiqueta&quot;&gt;Valor comercial&lt;/span&gt;&lt;strong id=&quot;statValor&quot;&gt;$0&lt;/strong&gt;&lt;span class=&quot;detalle&quot;&gt;suma de precios&lt;/span&gt;&lt;/article&gt;
+    &lt;/section&gt;
+
+    &lt;section class=&quot;panel filtros&quot;&gt;
+      &lt;div class=&quot;campo&quot;&gt;
+        &lt;label for=&quot;filtroTipo&quot;&gt;Tipo&lt;/label&gt;
+        &lt;select id=&quot;filtroTipo&quot;&gt;&lt;option value=&quot;&quot;&gt;Todos&lt;/option&gt;&lt;/select&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;campo&quot;&gt;
+        &lt;label for=&quot;filtroEstado&quot;&gt;Estado&lt;/label&gt;
+        &lt;select id=&quot;filtroEstado&quot;&gt;&lt;option value=&quot;&quot;&gt;Todos&lt;/option&gt;&lt;/select&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;campo crece&quot;&gt;
+        &lt;label for=&quot;filtroMarca&quot;&gt;Marca&lt;/label&gt;
+        &lt;input id=&quot;filtroMarca&quot; type=&quot;text&quot; placeholder=&quot;Ej: Toyota, Ford, Honda...&quot;&gt;
+      &lt;/div&gt;
+      &lt;button class=&quot;btn primario&quot; id=&quot;btnFiltrar&quot;&gt;Aplicar filtros&lt;/button&gt;
+      &lt;button class=&quot;btn&quot; id=&quot;btnLimpiar&quot;&gt;Limpiar&lt;/button&gt;
+    &lt;/section&gt;
+
+    &lt;section class=&quot;panel tabla-panel&quot;&gt;
+      &lt;div class=&quot;tabla-cabecera&quot;&gt;
+        &lt;h2&gt;Stock de veh&#237;culos&lt;/h2&gt;
+        &lt;span id=&quot;contador&quot; class=&quot;contador&quot;&gt;0 resultados&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;tabla-scroll&quot;&gt;
+        &lt;table&gt;
+          &lt;thead&gt;
+            &lt;tr&gt;
+              &lt;th&gt;ID&lt;/th&gt;&lt;th&gt;Marca / Modelo&lt;/th&gt;&lt;th&gt;A&#241;o&lt;/th&gt;&lt;th&gt;Color&lt;/th&gt;
+              &lt;th&gt;Estado&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Precio&lt;/th&gt;&lt;th&gt;Patente&lt;/th&gt;&lt;th&gt;Acciones&lt;/th&gt;
+            &lt;/tr&gt;
+          &lt;/thead&gt;
+          &lt;tbody id=&quot;cuerpoTabla&quot;&gt;&lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;
+    &lt;/section&gt;
+  &lt;/main&gt;
+
+  &lt;div id=&quot;toast&quot; class=&quot;toast&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+
+  &lt;!-- Modal: alta --&gt;
+  &lt;div class=&quot;modal&quot; id=&quot;modalAlta&quot; hidden&gt;
+    &lt;div class=&quot;modal-caja&quot;&gt;
+      &lt;div class=&quot;modal-cabecera&quot;&gt;&lt;h2&gt;Alta de veh&#237;culo&lt;/h2&gt;&lt;button class=&quot;cerrar&quot; data-cerrar=&quot;modalAlta&quot;&gt;&#215;&lt;/button&gt;&lt;/div&gt;
+      &lt;form id=&quot;formAlta&quot; class=&quot;modal-cuerpo&quot;&gt;
+        &lt;div class=&quot;rejilla&quot;&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;tipo&quot;&gt;Tipo *&lt;/label&gt;&lt;select id=&quot;tipo&quot; name=&quot;tipo&quot; required&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;id&quot;&gt;Identificador *&lt;/label&gt;&lt;input id=&quot;id&quot; name=&quot;id&quot; required placeholder=&quot;Patente o c&#243;digo&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;marca&quot;&gt;Marca *&lt;/label&gt;&lt;input id=&quot;marca&quot; name=&quot;marca&quot; required&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;modelo&quot;&gt;Modelo *&lt;/label&gt;&lt;input id=&quot;modelo&quot; name=&quot;modelo&quot; required&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;anio&quot;&gt;A&#241;o *&lt;/label&gt;&lt;input id=&quot;anio&quot; name=&quot;anio&quot; type=&quot;number&quot; min=&quot;1950&quot; max=&quot;2026&quot; value=&quot;2024&quot; required&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;color&quot;&gt;Color *&lt;/label&gt;&lt;input id=&quot;color&quot; name=&quot;color&quot; required&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;estado&quot;&gt;Estado *&lt;/label&gt;&lt;select id=&quot;estado&quot; name=&quot;estado&quot; required&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoKm&quot; hidden&gt;&lt;label for=&quot;kilometraje&quot;&gt;Kilometraje *&lt;/label&gt;&lt;input id=&quot;kilometraje&quot; name=&quot;kilometraje&quot; type=&quot;number&quot; min=&quot;0.1&quot; step=&quot;0.1&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;precio&quot;&gt;Precio *&lt;/label&gt;&lt;input id=&quot;precio&quot; name=&quot;precio&quot; type=&quot;number&quot; min=&quot;0.01&quot; step=&quot;0.01&quot; required&gt;&lt;/div&gt;
+
+          &lt;div class=&quot;campo&quot; id=&quot;campoCarroceria&quot; hidden&gt;&lt;label for=&quot;carroceria&quot;&gt;Carrocer&#237;a *&lt;/label&gt;&lt;select id=&quot;carroceria&quot; name=&quot;carroceria&quot;&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoPuertas&quot; hidden&gt;&lt;label for=&quot;puertas&quot;&gt;Puertas *&lt;/label&gt;&lt;input id=&quot;puertas&quot; name=&quot;puertas&quot; type=&quot;number&quot; min=&quot;2&quot; max=&quot;5&quot; value=&quot;4&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoCabina&quot; hidden&gt;&lt;label for=&quot;cabina&quot;&gt;Cabina / caja *&lt;/label&gt;&lt;select id=&quot;cabina&quot; name=&quot;cabina&quot;&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoTraccion&quot; hidden&gt;&lt;label for=&quot;traccion&quot;&gt;Tracci&#243;n *&lt;/label&gt;&lt;select id=&quot;traccion&quot; name=&quot;traccion&quot;&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoCarga&quot; hidden&gt;&lt;label for=&quot;capacidadCarga&quot;&gt;Carga (kg) *&lt;/label&gt;&lt;input id=&quot;capacidadCarga&quot; name=&quot;capacidadCarga&quot; type=&quot;number&quot; min=&quot;0.1&quot; step=&quot;0.1&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoEstilo&quot; hidden&gt;&lt;label for=&quot;estilo&quot;&gt;Estilo *&lt;/label&gt;&lt;select id=&quot;estilo&quot; name=&quot;estilo&quot;&gt;&lt;/select&gt;&lt;/div&gt;
+          &lt;div class=&quot;campo&quot; id=&quot;campoCilindrada&quot; hidden&gt;&lt;label for=&quot;cilindrada&quot;&gt;Cilindrada (cc) *&lt;/label&gt;&lt;input id=&quot;cilindrada&quot; name=&quot;cilindrada&quot; type=&quot;number&quot; min=&quot;1&quot;&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;modal-pie&quot;&gt;
+          &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-cerrar=&quot;modalAlta&quot;&gt;Cancelar&lt;/button&gt;
+          &lt;button type=&quot;submit&quot; class=&quot;btn primario&quot;&gt;Guardar veh&#237;culo&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Modal: editar --&gt;
+  &lt;div class=&quot;modal&quot; id=&quot;modalEditar&quot; hidden&gt;
+    &lt;div class=&quot;modal-caja pequena&quot;&gt;
+      &lt;div class=&quot;modal-cabecera&quot;&gt;&lt;h2&gt;Modificar veh&#237;culo&lt;/h2&gt;&lt;button class=&quot;cerrar&quot; data-cerrar=&quot;modalEditar&quot;&gt;&#215;&lt;/button&gt;&lt;/div&gt;
+      &lt;form id=&quot;formEditar&quot; class=&quot;modal-cuerpo&quot;&gt;
+        &lt;input type=&quot;hidden&quot; id=&quot;editarId&quot;&gt;
+        &lt;p class=&quot;aviso&quot; id=&quot;editarFicha&quot;&gt;&lt;/p&gt;
+        &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;editarPrecio&quot;&gt;Nuevo precio&lt;/label&gt;&lt;input id=&quot;editarPrecio&quot; type=&quot;number&quot; min=&quot;0.01&quot; step=&quot;0.01&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;editarColor&quot;&gt;Nuevo color&lt;/label&gt;&lt;input id=&quot;editarColor&quot; type=&quot;text&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;modal-pie&quot;&gt;
+          &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-cerrar=&quot;modalEditar&quot;&gt;Cancelar&lt;/button&gt;
+          &lt;button type=&quot;submit&quot; class=&quot;btn primario&quot;&gt;Guardar cambios&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Modal: simulaci&#243;n --&gt;
+  &lt;div class=&quot;modal&quot; id=&quot;modalSimular&quot; hidden&gt;
+    &lt;div class=&quot;modal-caja pequena&quot;&gt;
+      &lt;div class=&quot;modal-cabecera&quot;&gt;&lt;h2&gt;Simular venta&lt;/h2&gt;&lt;button class=&quot;cerrar&quot; data-cerrar=&quot;modalSimular&quot;&gt;&#215;&lt;/button&gt;&lt;/div&gt;
+      &lt;form id=&quot;formSimular&quot; class=&quot;modal-cuerpo&quot;&gt;
+        &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;simularId&quot;&gt;Veh&#237;culo&lt;/label&gt;&lt;select id=&quot;simularId&quot; required&gt;&lt;/select&gt;&lt;/div&gt;
+        &lt;div class=&quot;campo&quot;&gt;&lt;label for=&quot;simularDescuento&quot;&gt;Descuento (%)&lt;/label&gt;&lt;input id=&quot;simularDescuento&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;100&quot; step=&quot;1&quot; value=&quot;0&quot; required&gt;&lt;/div&gt;
+        &lt;div id=&quot;resultadoSimulacion&quot; class=&quot;resultado&quot; hidden&gt;&lt;/div&gt;
+        &lt;div class=&quot;modal-pie&quot;&gt;
+          &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-cerrar=&quot;modalSimular&quot;&gt;Cerrar&lt;/button&gt;
+          &lt;button type=&quot;submit&quot; class=&quot;btn primario&quot;&gt;Calcular&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Modal: ficha --&gt;
+  &lt;div class=&quot;modal&quot; id=&quot;modalFicha&quot; hidden&gt;
+    &lt;div class=&quot;modal-caja pequena&quot;&gt;
+      &lt;div class=&quot;modal-cabecera&quot;&gt;&lt;h2&gt;Ficha t&#233;cnica&lt;/h2&gt;&lt;button class=&quot;cerrar&quot; data-cerrar=&quot;modalFicha&quot;&gt;&#215;&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;modal-cuerpo&quot;&gt;&lt;pre id=&quot;fichaTexto&quot; class=&quot;ficha&quot;&gt;&lt;/pre&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></details>
+<details><summary>web-static/styles.css</summary><pre><code>:root {
+  --fondo: #0d1117;
+  --panel: #161b22;
+  --borde: #30363d;
+  --texto: #e6edf3;
+  --suave: #8b949e;
+  --azul: #58a6ff;
+  --verde: #7ee787;
+  --rojo: #ff7b72;
+  --amarillo: #d29922;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+.barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--borde);
+  flex-wrap: wrap;
+}
+
+.marca { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #1f6feb, #58a6ff);
+  color: #fff; font-weight: 800; letter-spacing: 1px;
+}
+h1 { margin: 0; font-size: 20px; }
+.barra p { margin: 3px 0 0; color: var(--suave); font-size: 13px; }
+.acciones-barra { display: flex; gap: 10px; flex-wrap: wrap; }
+
+main { padding: 24px 28px 48px; max-width: 1500px; margin: 0 auto; }
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.tarjeta {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tarjeta .etiqueta { color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+.tarjeta strong { font-size: 26px; color: var(--azul); }
+.tarjeta .detalle { color: var(--suave); font-size: 12px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.filtros { display: flex; gap: 14px; align-items: end; flex-wrap: wrap; }
+.campo { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+.campo.crece { flex: 1; }
+label { font-size: 12px; color: var(--suave); font-weight: 600; }
+input, select {
+  background: #0d1117; color: var(--texto);
+  border: 1px solid var(--borde); border-radius: 7px;
+  padding: 9px 10px; font-size: 14px; font-family: inherit;
+}
+input:focus, select:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
+
+.btn {
+  background: #21262d; color: var(--texto);
+  border: 1px solid var(--borde); border-radius: 7px;
+  padding: 9px 14px; cursor: pointer; font-size: 14px; font-weight: 600;
+}
+.btn:hover { border-color: var(--azul); }
+.btn.primario { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.btn.primario:hover { background: #388bfd; }
+.btn.peligro { color: var(--rojo); }
+.btn.pequeno { padding: 5px 9px; font-size: 12px; }
+
+.tabla-cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.tabla-cabecera h2 { margin: 0; font-size: 17px; }
+.contador { color: var(--suave); font-size: 13px; }
+.tabla-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+th { color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+tbody tr:hover { background: #1c2128; }
+.vacio { text-align: center; color: var(--suave); padding: 34px; }
+.precio { color: var(--verde); font-weight: 700; }
+.pill {
+  display: inline-block; padding: 3px 9px; border-radius: 12px;
+  font-size: 12px; border: 1px solid var(--borde);
+}
+.pill.nuevo { color: var(--verde); border-color: #238636; }
+.pill.usado { color: var(--amarillo); border-color: #9e6a03; }
+.acciones-tabla { display: flex; gap: 6px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 10;
+  background: rgba(1, 4, 9, .78);
+  display: grid; place-items: center; padding: 20px;
+}
+.modal[hidden] { display: none; }
+.modal-caja {
+  width: min(720px, 100%); max-height: 90vh; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--borde); border-radius: 12px;
+}
+.modal-caja.pequena { width: min(480px, 100%); }
+.modal-cabecera {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--borde);
+}
+.modal-cabecera h2 { margin: 0; font-size: 18px; }
+.cerrar { background: none; border: 0; color: var(--suave); font-size: 26px; cursor: pointer; line-height: 1; }
+.modal-cuerpo { padding: 20px; }
+.rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.modal-pie { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--borde); padding-top: 16px; }
+.aviso { color: var(--suave); font-size: 13px; background: #0d1117; padding: 10px; border-radius: 7px; }
+.resultado { margin-top: 16px; background: #0d1117; border: 1px solid #238636; border-radius: 8px; padding: 14px; }
+.resultado[hidden] { display: none; }
+.resultado div { display: flex; justify-content: space-between; padding: 4px 0; }
+.resultado .total { color: var(--verde); font-weight: 800; font-size: 17px; border-top: 1px solid var(--borde); margin-top: 8px; padding-top: 10px; }
+.ficha { white-space: pre-wrap; word-break: break-word; color: var(--texto); font-family: Consolas, monospace; font-size: 13px; }
+
+.toast {
+  position: fixed; right: 22px; bottom: 22px; z-index: 20;
+  background: #238636; color: #fff; padding: 12px 18px; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); opacity: 0; pointer-events: none;
+  transition: opacity .2s ease; max-width: 420px;
+}
+.toast.visible { opacity: 1; }
+.toast.error { background: #da3633; }
+
+@media (max-width: 700px) {
+  .rejilla { grid-template-columns: 1fr; }
+  main, .barra { padding-left: 16px; padding-right: 16px; }
+}
+</code></pre></details>
+<details><summary>Diagrama de clases UML (Mermaid)</summary><pre><code>classDiagram
+direction TB
+
+class Vehiculo {
+  &lt;&lt;abstract&gt;&gt;
+  -String identificador
+  -String marca
+  -String modelo
+  -Integer anio
+  -String color
+  -EstadoVehiculo estado
+  -Double kilometraje
+  -Double precio
+  +Vehiculo(identificador, marca, modelo, anio, color, estado, kilometraje, precio)
+  +obtenerTipo()* TipoVehiculo
+  +obtenerFichaTecnicaDetallada()* String
+  +validar() void
+  #validarReglasEspecificas()* void
+  #redondear(Double) Double
+  +calcularImpuestoPatente()* Double
+  +calcularValorTasado() Double
+  +calcularPrecioFinalVenta() Double
+  +aplicarDescuento(Double) Double
+  +equals(Object) boolean
+  +hashCode() int
+  +toString() String
+}
+
+class Automovil {
+  -TipoCarroceria carroceria
+  -Integer puertas
+  +Automovil(...)
+  +obtenerTipo() TipoVehiculo
+  +obtenerFichaTecnicaDetallada() String
+  +validarReglasEspecificas() void
+  +calcularImpuestoPatente() Double
+  +toString() String
+}
+
+class Camioneta {
+  -TipoCabina cabina
+  -TipoTraccion traccion
+  -Double capacidadCarga
+  +Camioneta(...)
+  +obtenerTipo() TipoVehiculo
+  +obtenerFichaTecnicaDetallada() String
+  +validarReglasEspecificas() void
+  +calcularImpuestoPatente() Double
+  +toString() String
+}
+
+class Motocicleta {
+  -EstiloMotocicleta estilo
+  -Integer cilindrada
+  +Motocicleta(...)
+  +obtenerTipo() TipoVehiculo
+  +obtenerFichaTecnicaDetallada() String
+  +validarReglasEspecificas() void
+  +calcularImpuestoPatente() Double
+  +toString() String
+}
+
+class Vendible {
+  &lt;&lt;interface&gt;&gt;
+  +calcularPrecioFinalVenta() Double
+  +aplicarDescuento(Double) Double
+}
+
+class Tasable {
+  &lt;&lt;interface&gt;&gt;
+  +calcularImpuestoPatente() Double
+  +calcularValorTasado() Double
+}
+
+class SimulacionVenta {
+  -Vehiculo vehiculo
+  -Double porcentajeDescuento
+  -Double precioFinal
+  -Double impuestoPatente
+  -Double valorTasado
+  -Double total
+  +SimulacionVenta(...)
+  +getVehiculo() Vehiculo
+  +getPorcentajeDescuento() Double
+  +getPrecioFinal() Double
+  +getImpuestoPatente() Double
+  +getValorTasado() Double
+  +getTotal() Double
+}
+
+class EstadoVehiculo {
+  &lt;&lt;enumeration&gt;&gt;
+  NUEVO
+  USADO
+  +getEtiqueta() String
+}
+class TipoVehiculo {
+  &lt;&lt;enumeration&gt;&gt;
+  AUTOMOVIL
+  CAMIONETA
+  MOTOCICLETA
+  +getEtiqueta() String
+}
+class TipoCarroceria {
+  &lt;&lt;enumeration&gt;&gt;
+  SEDAN
+  HATCHBACK
+  COUPE
+  SUV
+  FAMILIAR
+  CONVERTIBLE
+}
+class TipoCabina {
+  &lt;&lt;enumeration&gt;&gt;
+  CABINA_SIMPLE
+  DOBLE_CABINA
+  UTILITARIO
+}
+class TipoTraccion {
+  &lt;&lt;enumeration&gt;&gt;
+  TRACCION_4X2
+  TRACCION_4X4
+}
+class EstiloMotocicleta {
+  &lt;&lt;enumeration&gt;&gt;
+  NAKED
+  ENDURO
+  TOURING
+  SCOOTER
+  DEPORTIVA
+  CUSTOM
+}
+
+class IRepositorio~T, ID~ {
+  &lt;&lt;interface&gt;&gt;
+  +agregar(T) void
+  +buscarPorId(ID) T
+  +listarTodos() List~T~
+  +actualizar(T) void
+  +eliminar(ID) void
+}
+class IRepositorioPersistible~T, ID~ {
+  &lt;&lt;interface&gt;&gt;
+  +cargar() void
+  +guardar() void
+}
+class RepositorioGenerico~T, ID~ {
+  #Map~ID, T~ entidades
+  #Function~T, ID~ extractorId
+  +RepositorioGenerico(Function~T, ID~)
+  +agregar(T) void
+  +buscarPorId(ID) T
+  +listarTodos() List~T~
+  +actualizar(T) void
+  +eliminar(ID) void
+  #reemplazarTodo(Collection~T~) void
+}
+class RepositorioVehiculos {
+  -Path archivo
+  +RepositorioVehiculos()
+  +RepositorioVehiculos(Path)
+  +cargar() void
+  +guardar() void
+  +getArchivo() Path
+}
+class CsvVehiculoCodec {
+  &lt;&lt;final&gt;&gt;
+  +serialize(Vehiculo) String
+  +deserialize(String) Vehiculo
+}
+
+class ServicioVehiculos {
+  -IRepositorioPersistible~Vehiculo, String~ repositorio
+  +ServicioVehiculos(IRepositorioPersistible)
+  +inicializar() void
+  +darDeAlta(Vehiculo) void
+  +buscarPorId(String) Vehiculo
+  +listarTodos() List~Vehiculo~
+  +listarPorTipo(TipoVehiculo) List~Vehiculo~
+  +listarPorEstado(EstadoVehiculo) List~Vehiculo~
+  +listarPorMarca(String) List~Vehiculo~
+  +cambiarPrecio(String, Double) void
+  +cambiarColor(String, String) void
+  +darDeBaja(String) void
+  +simularVenta(String, Double) SimulacionVenta
+  +guardar() void
+}
+
+class Validador {
+  &lt;&lt;final&gt;&gt;
+  +validarTextoNoVacio(String, String) String
+  +parsearEntero(String, String) Integer
+  +parsearDouble(String, String) Double
+  +validarAnio(Integer) Integer
+  +validarPrecio(Double) Double
+  +validarKilometraje(Double) Double
+  +validarEnteroPositivo(Integer, String) Integer
+  +validarPorcentaje(Double) Double
+  +parsearEnum(String, Class~E~) E
+}
+class LecturaConsola {
+  -Scanner scanner
+  +leerTexto(String) String
+  +leerEntero(String, Integer, Integer) Integer
+  +leerDouble(String, Double, Double) Double
+  +leerEnum(String, Class~E~) E
+  +leerSiNo(String) Boolean
+  +limpiarBuffer() void
+}
+class ConsolaApp {
+  -LecturaConsola lector
+  -RepositorioVehiculos repositorio
+  -ServicioVehiculos servicio
+  +iniciar() void
+}
+class FormateadorSalida {
+  &lt;&lt;final&gt;&gt;
+  +tabla(List~Vehiculo~) String
+  +ficha(Vehiculo) String
+  +simulacion(SimulacionVenta) String
+}
+class Main {
+  &lt;&lt;final&gt;&gt;
+  +main(String[]) void
+}
+
+class ServidorWeb {
+  -ServicioVehiculos servicio
+  -Path raizEstatica
+  -Integer puerto
+  +iniciar() void
+  +detener() void
+  +main(String[]) void
+  #api(String, String, Map) Respuesta
+  #construirVehiculo(Map) Vehiculo
+  #estatico(String) Respuesta
+}
+class Json {
+  &lt;&lt;final&gt;&gt;
+  +escape(String) String
+  +vehiculo(Vehiculo) String
+  +lista(List~Vehiculo~) String
+  +simulacion(SimulacionVenta) String
+  +opciones() String
+  +error(String) String
+  +mensaje(String) String
+}
+class DatoInvalidoException
+class KilometrajeInconsistenteException
+class VehiculoDuplicadoException
+class VehiculoNoEncontradoException
+
+Vehiculo &lt;|-- Automovil
+Vehiculo &lt;|-- Camioneta
+Vehiculo &lt;|-- Motocicleta
+Vehiculo ..|&gt; Vendible
+Vehiculo ..|&gt; Tasable
+Vehiculo --&gt; EstadoVehiculo
+Automovil --&gt; TipoCarroceria
+Camioneta --&gt; TipoCabina
+Camioneta --&gt; TipoTraccion
+Motocicleta --&gt; EstiloMotocicleta
+Vehiculo ..&gt; DatoInvalidoException
+Vehiculo ..&gt; KilometrajeInconsistenteException
+KilometrajeInconsistenteException --|&gt; DatoInvalidoException
+
+SimulacionVenta --&gt; Vehiculo
+IRepositorio &lt;|.. IRepositorioPersistible
+IRepositorio &lt;|.. RepositorioGenerico
+RepositorioGenerico &lt;|-- RepositorioVehiculos
+RepositorioVehiculos ..|&gt; IRepositorioPersistible
+RepositorioVehiculos &quot;1&quot; *-- &quot;0..*&quot; Vehiculo
+RepositorioVehiculos ..&gt; CsvVehiculoCodec
+RepositorioVehiculos ..&gt; DatoInvalidoException
+RepositorioVehiculos ..&gt; VehiculoDuplicadoException
+RepositorioVehiculos ..&gt; VehiculoNoEncontradoException
+CsvVehiculoCodec ..&gt; Validador
+CsvVehiculoCodec ..&gt; Vehiculo
+
+ServicioVehiculos --&gt; IRepositorioPersistible
+ServicioVehiculos ..&gt; Validador
+ServicioVehiculos ..&gt; SimulacionVenta
+ServicioVehiculos ..&gt; TipoVehiculo
+ServicioVehiculos ..&gt; EstadoVehiculo
+ServicioVehiculos ..&gt; DatoInvalidoException
+ServicioVehiculos ..&gt; VehiculoDuplicadoException
+ServicioVehiculos ..&gt; VehiculoNoEncontradoException
+
+LecturaConsola ..&gt; Validador
+ConsolaApp --&gt; ServicioVehiculos
+ConsolaApp --&gt; RepositorioVehiculos
+ConsolaApp --&gt; LecturaConsola
+ConsolaApp ..&gt; FormateadorSalida
+FormateadorSalida ..&gt; Vehiculo
+FormateadorSalida ..&gt; SimulacionVenta
+Main --&gt; ConsolaApp
+ServidorWeb --&gt; ServicioVehiculos
+ServidorWeb --&gt; RepositorioVehiculos
+ServidorWeb ..&gt; Json
+ServidorWeb ..&gt; Validador
+ServidorWeb ..&gt; DatoInvalidoException
+ServidorWeb ..&gt; Vehiculo
+ServidorWeb ..&gt; SimulacionVenta</code></pre></details>
+</main></body></html>
