@@ -95,6 +95,16 @@ Endpoints:
 El archivo `stock.csv` se crea automáticamente en el directorio de ejecución;
 se carga al iniciar (consola o web) y se reescribe tras cada cambio.
 
+Para generar un stock de demostración con 73 vehículos (25 autos, 24 camionetas
+y 24 motos):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generar-stock-demo.ps1
+```
+
+El script usa Base64 URL-safe, coincide con `CsvVehiculoCodec` y respeta las
+reglas `NUEVO = 0 km` / `USADO > 0 km`.
+
 ## Decisiones de diseño principales
 
 - **Dominio puro:** `Vehiculo` es abstracta, implementa `Serializable`, `Vendible` y
